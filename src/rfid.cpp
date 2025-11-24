@@ -7,9 +7,8 @@ RFIDReader::RFIDReader() : mfrc522(RFID_SS_PIN, RFID_RST_PIN), lastReadTime(0) {
 }
 
 bool RFIDReader::begin() {
-    // Initialisiere SPI für RFID (wird mit Display geteilt)
-    SPI.begin(RFID_SCK_PIN, RFID_MISO_PIN, RFID_MOSI_PIN, RFID_SS_PIN);
-
+    // SPI Bus ist bereits in main.cpp initialisiert
+    // Initialisiere nur das RFID Modul
     mfrc522.PCD_Init();
     delay(100);
 

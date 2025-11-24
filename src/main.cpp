@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <SPI.h>
 #include "config.h"
 #include "storage.h"
 #include "rfid.h"
@@ -22,6 +23,11 @@ void setup() {
     Serial.println("\n\n=================================");
     Serial.println("   Countdown Display System");
     Serial.println("=================================\n");
+
+    // Initialisiere SPI Bus (wird von RFID und Display geteilt)
+    Serial.println("Initialisiere SPI Bus...");
+    SPI.begin(EPD_SCK_PIN, RFID_MISO_PIN, EPD_MOSI_PIN, -1);
+    Serial.println("SPI Bus initialisiert");
 
     // Initialisiere Storage (LittleFS)
     Serial.println("Initialisiere Speicher...");

@@ -12,7 +12,8 @@ DisplayManager::DisplayManager() {
 }
 
 bool DisplayManager::begin() {
-    display->init(115200);
+    // Initialisiere Display (SPI ist bereits initialisiert)
+    display->init(0, true, 2, false); // (serial_diag, initial, reset_duration, pulldown_rst)
     display->setRotation(0);
     display->setTextColor(GxEPD_BLACK);
 
