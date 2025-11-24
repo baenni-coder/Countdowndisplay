@@ -106,8 +106,16 @@ void loop() {
 
         String uid = rfidReader.readCardUID();
 
+        // Wenn keine Karte erkannt wurde, zurücksetzen
+        if (uid.length() == 0) {
+            if (currentCardUID.length() > 0) {
+                Serial.println("Karte entfernt");
+                currentCardUID = "";
+                currentCountdown = nullptr;
+            }
+        }
         // Wenn eine neue Karte erkannt wurde
-        if (uid.length() > 0 && uid != currentCardUID) {
+        else if (uid != currentCardUID) {
             currentCardUID = uid;
             Serial.print("Neue Karte erkannt: ");
             Serial.println(uid);
@@ -118,7 +126,23 @@ void loop() {
             if (currentCountdown != nullptr) {
                 Serial.print("Countdown gefunden: ");
                 Serial.println(currentCountdown->name);
-                displayNeedsUpdate = true;
+
+                // SOFORT Display aktualisieren bei neuer Karte
+                int daysRemaining = displayManager.calculateDaysRemaining(currentCountdown->targetDate);
+
+                if (daysRemaining == -9999) {
+                    displayManager.showError("Ungültiges Datum");
+                } else {
+                    Serial.print("Zeige Countdown: ");
+                    Serial.print(currentCountdown->name);
+                    Serial.print(" - Tage verbleibend: ");
+                    Serial.println(daysRemaining);
+
+                    displayManager.showCountdown(*currentCountdown, daysRemaining);
+                }
+
+                lastDisplayUpdate = currentMillis;  // Zeitstempel aktualisieren
+                displayNeedsUpdate = false;
             } else {
                 Serial.println("Keine Konfiguration für diese Karte gefunden");
                 displayManager.showNoCardScreen();
@@ -127,26 +151,17 @@ void loop() {
         }
     }
 
-    // Update Display wenn nötig
-    if (displayNeedsUpdate && currentCountdown != nullptr) {
-        if (currentMillis - lastDisplayUpdate >= DISPLAY_UPDATE_INTERVAL || lastDisplayUpdate == 0) {
+    // Periodisches Display-Update (nur für Datum-Änderungen um Mitternacht)
+    if (currentCountdown != nullptr && !displayNeedsUpdate) {
+        if (currentMillis - lastDisplayUpdate >= DISPLAY_UPDATE_INTERVAL) {
             lastDisplayUpdate = currentMillis;
 
             int daysRemaining = displayManager.calculateDaysRemaining(currentCountdown->targetDate);
 
-            if (daysRemaining == -9999) {
-                displayManager.showError("Ungültiges Datum");
-            } else {
-                Serial.print("Zeige Countdown: ");
-                Serial.print(currentCountdown->name);
-                Serial.print(" - Tage verbleibend: ");
-                Serial.println(daysRemaining);
-
+            if (daysRemaining != -9999) {
+                Serial.println("Periodisches Display-Update (Datum-Wechsel)");
                 displayManager.showCountdown(*currentCountdown, daysRemaining);
             }
-
-            // Nach dem ersten Update, update nur noch täglich
-            displayNeedsUpdate = false;
         }
     }
 

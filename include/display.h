@@ -33,6 +33,8 @@ private:
 
     void drawCenteredText(const String& text, int y, const GFXfont* font);
     void drawBorder();
+    String formatDateGerman(const String& date);
+    bool drawBMPImage(const String& filename, int16_t x, int16_t y, int16_t maxWidth, int16_t maxHeight);
 };
 
 extern DisplayManager displayManager;

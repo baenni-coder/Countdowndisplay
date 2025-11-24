@@ -113,6 +113,7 @@ void WebServerManager::setupRoutes() {
             cd.uid = doc["uid"].as<String>();
             cd.name = doc["name"].as<String>();
             cd.targetDate = doc["targetDate"].as<String>();
+            cd.imagePath = doc["imagePath"] | "";
             cd.active = doc["active"].as<bool>();
 
             if (storage.addCountdown(cd)) {
@@ -139,6 +140,7 @@ void WebServerManager::setupRoutes() {
             cd.uid = doc["uid"].as<String>();
             cd.name = doc["name"].as<String>();
             cd.targetDate = doc["targetDate"].as<String>();
+            cd.imagePath = doc["imagePath"] | "";
             cd.active = doc["active"].as<bool>();
 
             if (storage.updateCountdown(uid, cd)) {
@@ -202,6 +204,74 @@ void WebServerManager::setupRoutes() {
         delay(500);
         ESP.restart();
     });
+
+    // POST /api/upload-image - Bild hochladen
+    server.on("/api/upload-image", HTTP_POST,
+        [](AsyncWebServerRequest* request) {
+            // Wird aufgerufen, wenn der Upload abgeschlossen ist
+            request->send(200, "application/json", "{\"success\":true,\"message\":\"Bild erfolgreich hochgeladen\"}");
+        },
+        [](AsyncWebServerRequest* request, const String& filename, size_t index, uint8_t* data, size_t len, bool final) {
+            // Multipart File Upload Handler
+            static File uploadFile;
+
+            if (index == 0) {
+                // Start des Uploads - erstelle Datei
+                Serial.println("Starte Bild-Upload: " + filename);
+
+                // Erstelle /images Verzeichnis falls nicht vorhanden
+                if (!LittleFS.exists("/images")) {
+                    LittleFS.mkdir("/images");
+                }
+
+                // Öffne Datei zum Schreiben
+                String path = "/images/" + filename;
+                uploadFile = LittleFS.open(path, "w");
+                if (!uploadFile) {
+                    Serial.println("Fehler beim Erstellen der Datei");
+                    request->send(500, "application/json", "{\"success\":false,\"error\":\"Konnte Datei nicht erstellen\"}");
+                    return;
+                }
+            }
+
+            // Schreibe Daten
+            if (uploadFile && len) {
+                uploadFile.write(data, len);
+            }
+
+            if (final) {
+                // Upload abgeschlossen
+                if (uploadFile) {
+                    uploadFile.close();
+                }
+                Serial.println("Bild-Upload abgeschlossen: " + filename);
+            }
+        }
+    );
+
+    // GET /api/images - Liste aller Bilder
+    server.on("/api/images", HTTP_GET, [](AsyncWebServerRequest* request) {
+        DynamicJsonDocument doc(2048);
+        JsonArray array = doc.to<JsonArray>();
+
+        File root = LittleFS.open("/images");
+        if (root && root.isDirectory()) {
+            File file = root.openNextFile();
+            while (file) {
+                if (!file.isDirectory()) {
+                    JsonObject obj = array.createNestedObject();
+                    obj["name"] = String(file.name());
+                    obj["path"] = "/images/" + String(file.name());
+                    obj["size"] = file.size();
+                }
+                file = root.openNextFile();
+            }
+        }
+
+        String output;
+        serializeJson(doc, output);
+        request->send(200, "application/json", output);
+    });
 }
 
 void WebServerManager::handleGetCountdowns(AsyncWebServerRequest* request) {
@@ -214,6 +284,7 @@ void WebServerManager::handleGetCountdowns(AsyncWebServerRequest* request) {
         obj["uid"] = cd.uid;
         obj["name"] = cd.name;
         obj["targetDate"] = cd.targetDate;
+        obj["imagePath"] = cd.imagePath;
         obj["active"] = cd.active;
     }
 
