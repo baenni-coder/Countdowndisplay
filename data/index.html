@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Countdown Display - Konfiguration</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📅 Countdown Display</h1>
+            <p class="subtitle">RFID Countdown Konfiguration</p>
+        </header>
+
+        <!-- System Status -->
+        <div class="card">
+            <h2>System Status</h2>
+            <div id="status-info">
+                <div class="status-item">
+                    <span class="label">Modus:</span>
+                    <span id="status-mode">Lädt...</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">IP Adresse:</span>
+                    <span id="status-ip">Lädt...</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">SSID:</span>
+                    <span id="status-ssid">Lädt...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Countdown Liste -->
+        <div class="card">
+            <div class="card-header">
+                <h2>Countdowns</h2>
+                <button class="btn btn-primary" onclick="showAddModal()">+ Neu</button>
+            </div>
+            <div id="countdown-list">
+                <p class="loading">Lade Countdowns...</p>
+            </div>
+        </div>
+
+        <!-- WiFi Einstellungen -->
+        <div class="card">
+            <h2>WiFi Einstellungen</h2>
+            <form id="wifi-form" onsubmit="saveWiFi(event)">
+                <div class="form-group">
+                    <label for="wifi-ssid">SSID:</label>
+                    <input type="text" id="wifi-ssid" placeholder="WiFi Netzwerkname" required>
+                </div>
+                <div class="form-group">
+                    <label for="wifi-password">Passwort:</label>
+                    <input type="password" id="wifi-password" placeholder="WiFi Passwort">
+                </div>
+                <button type="submit" class="btn btn-primary">Speichern & Neustarten</button>
+            </form>
+        </div>
+
+        <!-- Über -->
+        <div class="card">
+            <h2>Über</h2>
+            <p>Countdown Display System mit E-Ink und RFID.</p>
+            <p>Halte eine RFID-Karte an den Leser, um den entsprechenden Countdown anzuzeigen.</p>
+            <button class="btn btn-secondary" onclick="restartSystem()">System Neustarten</button>
+        </div>
+    </div>
+
+    <!-- Modal für Countdown hinzufügen/bearbeiten -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Countdown hinzufügen</h2>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            <form id="countdown-form" onsubmit="saveCountdown(event)">
+                <input type="hidden" id="edit-uid">
+                <input type="hidden" id="edit-mode" value="add">
+
+                <div class="form-group">
+                    <label for="card-uid">RFID Karten UID:</label>
+                    <div class="input-with-button">
+                        <input type="text" id="card-uid" placeholder="z.B. A1B2C3D4" required readonly>
+                        <button type="button" class="btn btn-secondary" onclick="scanCard()">Karte Scannen</button>
+                    </div>
+                    <small>Halte die Karte an den Leser und klicke auf "Karte Scannen"</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="countdown-name">Name:</label>
+                    <input type="text" id="countdown-name" placeholder="z.B. Laras Geburtstag" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="countdown-date">Zieldatum:</label>
+                    <input type="date" id="countdown-date" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="countdown-active" checked>
+                        Aktiv
+                    </label>
+                </div>
+
+                <div class="modal-buttons">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Abbrechen</button>
+                    <button type="submit" class="btn btn-primary">Speichern</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
