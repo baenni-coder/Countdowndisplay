@@ -247,8 +247,17 @@ void WebServerManager::handleGetWiFi(AsyncWebServerRequest* request) {
 }
 
 void WebServerManager::handleScanCard(AsyncWebServerRequest* request) {
-    // Warte kurz auf eine Karte (nicht blockierend in Produktivcode!)
+    // Versuche zuerst, eine Karte zu lesen
     String uid = rfidReader.readCardUID();
+
+    // Wenn keine neue Karte, verwende die zuletzt gelesene (innerhalb von 10 Sekunden)
+    if (uid.length() == 0) {
+        unsigned long lastTime = rfidReader.getLastReadTime();
+        if (lastTime > 0 && (millis() - lastTime) < 10000) {  // 10 Sekunden Cache
+            uid = rfidReader.getLastCardUID();
+            Serial.println("Verwende gecachte Karten-UID für Web-Anfrage");
+        }
+    }
 
     if (uid.length() > 0) {
         DynamicJsonDocument doc(256);
@@ -259,6 +268,6 @@ void WebServerManager::handleScanCard(AsyncWebServerRequest* request) {
         serializeJson(doc, output);
         request->send(200, "application/json", output);
     } else {
-        request->send(200, "application/json", "{\"success\":false,\"error\":\"Keine Karte gefunden\"}");
+        request->send(200, "application/json", "{\"success\":false,\"error\":\"Keine Karte gefunden. Bitte Karte nah an Leser halten.\"}");
     }
 }

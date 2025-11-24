@@ -11,6 +11,8 @@ public:
     bool begin();
     bool cardPresent();
     String readCardUID();
+    String getLastCardUID() const { return lastUID; }  // Letzten UID abrufen
+    unsigned long getLastReadTime() const { return lastReadTime; }  // Letzten Lesezeitpunkt
 
 private:
     MFRC522 mfrc522;
