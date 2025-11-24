@@ -6,6 +6,10 @@
 #include "display.h"
 #include "webserver.h"
 
+// Separate SPI-Busse für das Waveshare E-Paper ESP32 Driver Board
+SPIClass hspi(HSPI);  // Display (GPIO 13, 14)
+SPIClass vspi(VSPI);  // RFID (GPIO 18, 19, 23)
+
 // State Management
 String currentCardUID = "";
 Countdown* currentCountdown = nullptr;
@@ -24,10 +28,15 @@ void setup() {
     Serial.println("   Countdown Display System");
     Serial.println("=================================\n");
 
-    // Initialisiere SPI Bus für Display (Waveshare E-Paper ESP32 Driver Board verwendet eigene Pins)
-    Serial.println("Initialisiere SPI Bus...");
-    SPI.begin(EPD_SCK_PIN, -1, EPD_MOSI_PIN, -1);  // Display SPI: CLK=13, DIN=14
-    Serial.println("SPI Bus initialisiert");
+    // Initialisiere Standard-SPI (VSPI) für RFID (GPIO 18, 19, 23)
+    Serial.println("Initialisiere RFID SPI Bus (VSPI)...");
+    SPI.begin(RFID_SCK_PIN, RFID_MISO_PIN, RFID_MOSI_PIN, RFID_SS_PIN);
+    Serial.println("RFID SPI Bus initialisiert");
+
+    // Initialisiere HSPI für Display (GPIO 13, 14) - wird im Display-Code verwendet
+    Serial.println("Initialisiere Display SPI Bus (HSPI)...");
+    hspi.begin(EPD_SCK_PIN, -1, EPD_MOSI_PIN, EPD_CS_PIN);
+    Serial.println("Display SPI Bus initialisiert");
 
     // Initialisiere Storage (LittleFS)
     Serial.println("Initialisiere Speicher...");

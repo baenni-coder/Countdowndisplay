@@ -2,12 +2,16 @@
 #define DISPLAY_H
 
 #include <Arduino.h>
+#include <SPI.h>
 #include <GxEPD2_BW.h>
 #include <Fonts/FreeSansBold24pt7b.h>
 #include <Fonts/FreeSansBold18pt7b.h>
 #include <Fonts/FreeSans12pt7b.h>
 #include <Fonts/FreeSans9pt7b.h>
 #include "storage.h"
+
+// Externe HSPI-Bus Referenz (für Waveshare E-Paper ESP32 Driver Board)
+extern SPIClass hspi;
 
 // Waveshare 7.5" V2 Display
 // Größe: 800x480 pixels

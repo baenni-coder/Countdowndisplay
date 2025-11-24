@@ -6,13 +6,17 @@ DisplayManager displayManager;
 
 DisplayManager::DisplayManager() {
     // GxEPD2_750_T7: Waveshare 7.5" V2 (800x480)
+    // Verwende HSPI-Bus für das Waveshare E-Paper ESP32 Driver Board
     display = new GxEPD2_BW<GxEPD2_750_T7, GxEPD2_750_T7::HEIGHT>(
         GxEPD2_750_T7(EPD_CS_PIN, EPD_DC_PIN, EPD_RST_PIN, EPD_BUSY_PIN)
     );
 }
 
 bool DisplayManager::begin() {
-    // Initialisiere Display (SPI ist bereits initialisiert)
+    // Setze HSPI als SPI-Bus für das Display
+    display->epd2.selectSPI(hspi, SPISettings(4000000, MSBFIRST, SPI_MODE0));
+
+    // Initialisiere Display (HSPI ist bereits in main.cpp initialisiert)
     display->init(0, true, 2, false); // (serial_diag, initial, reset_duration, pulldown_rst)
     display->setRotation(0);
     display->setTextColor(GxEPD_BLACK);
