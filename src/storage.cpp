@@ -135,6 +135,7 @@ String StorageManager::serializeToJson() {
         cdObj["uid"] = cd.uid;
         cdObj["name"] = cd.name;
         cdObj["targetDate"] = cd.targetDate;
+        cdObj["imagePath"] = cd.imagePath;
         cdObj["active"] = cd.active;
     }
 
@@ -165,6 +166,7 @@ bool StorageManager::deserializeFromJson(const String& json) {
         cd.uid = cdObj["uid"].as<String>();
         cd.name = cdObj["name"].as<String>();
         cd.targetDate = cdObj["targetDate"].as<String>();
+        cd.imagePath = cdObj["imagePath"] | "";  // Optional, Standard: leer
         cd.active = cdObj["active"].as<bool>();
         countdowns.push_back(cd);
     }

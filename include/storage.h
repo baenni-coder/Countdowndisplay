@@ -9,6 +9,7 @@ struct Countdown {
     String uid;           // RFID UID (8 bytes hex string)
     String name;          // Name (z.B. "Laras Geburtstag")
     String targetDate;    // Datum im Format "YYYY-MM-DD"
+    String imagePath;     // Pfad zum Bild (optional, z.B. "/images/birthday.bmp")
     bool active;          // Ist dieser Countdown aktiv?
 };
 
