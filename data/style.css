@@ -1,0 +1,346 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary-color: #4a90e2;
+    --primary-dark: #357abd;
+    --secondary-color: #6c757d;
+    --success-color: #28a745;
+    --danger-color: #dc3545;
+    --bg-color: #f5f7fa;
+    --card-bg: #ffffff;
+    --text-color: #333333;
+    --border-color: #e0e0e0;
+    --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    text-align: center;
+    padding: 30px 0;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: white;
+    border-radius: 10px;
+    margin-bottom: 30px;
+    box-shadow: var(--shadow);
+}
+
+header h1 {
+    font-size: 2.5em;
+    margin-bottom: 10px;
+}
+
+.subtitle {
+    font-size: 1.1em;
+    opacity: 0.9;
+}
+
+.card {
+    background: var(--card-bg);
+    border-radius: 10px;
+    padding: 25px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+h2 {
+    color: var(--text-color);
+    margin-bottom: 20px;
+    font-size: 1.5em;
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-dark);
+}
+
+.btn-secondary {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+}
+
+.btn-danger {
+    background-color: var(--danger-color);
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.form-group input[type="text"],
+.form-group input[type="password"],
+.form-group input[type="date"] {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid var(--border-color);
+    border-radius: 5px;
+    font-size: 1em;
+    transition: border-color 0.3s ease;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.form-group small {
+    display: block;
+    margin-top: 5px;
+    color: var(--secondary-color);
+    font-size: 0.9em;
+}
+
+.input-with-button {
+    display: flex;
+    gap: 10px;
+}
+
+.input-with-button input {
+    flex: 1;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.checkbox-label input {
+    margin-right: 10px;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+#countdown-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.countdown-item {
+    padding: 20px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.countdown-item:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 2px 8px rgba(74, 144, 226, 0.2);
+}
+
+.countdown-item.inactive {
+    opacity: 0.6;
+    background-color: #f9f9f9;
+}
+
+.countdown-info h3 {
+    color: var(--text-color);
+    margin-bottom: 8px;
+}
+
+.countdown-info p {
+    color: var(--secondary-color);
+    margin: 4px 0;
+    font-size: 0.95em;
+}
+
+.countdown-info .days-remaining {
+    font-weight: bold;
+    color: var(--primary-color);
+    font-size: 1.1em;
+    margin-top: 8px;
+}
+
+.countdown-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.status-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.status-item:last-child {
+    border-bottom: none;
+}
+
+.status-item .label {
+    font-weight: 500;
+    color: var(--secondary-color);
+}
+
+.loading {
+    text-align: center;
+    color: var(--secondary-color);
+    padding: 20px;
+}
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    animation: fadeIn 0.3s;
+}
+
+.modal.show {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background-color: var(--card-bg);
+    border-radius: 10px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: slideIn 0.3s;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.modal-header h2 {
+    margin: 0;
+}
+
+.close {
+    font-size: 2em;
+    font-weight: bold;
+    color: var(--secondary-color);
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.close:hover {
+    color: var(--text-color);
+}
+
+.modal form {
+    padding: 20px;
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+
+    header h1 {
+        font-size: 2em;
+    }
+
+    .countdown-item {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .countdown-actions {
+        margin-top: 15px;
+        width: 100%;
+    }
+
+    .countdown-actions button {
+        flex: 1;
+    }
+
+    .input-with-button {
+        flex-direction: column;
+    }
+}

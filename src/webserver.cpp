@@ -1,0 +1,250 @@
+#include "webserver.h"
+#include "storage.h"
+#include "rfid.h"
+#include "config.h"
+
+WebServerManager webServer;
+
+WebServerManager::WebServerManager() : server(80), apMode(true) {
+}
+
+bool WebServerManager::begin() {
+    // Versuche gespeicherte WiFi Credentials zu laden
+    String ssid, password;
+    if (storage.getWiFiCredentials(ssid, password) && !ssid.isEmpty()) {
+        if (connectToWiFi(ssid, password)) {
+            apMode = false;
+        } else {
+            Serial.println("Verbindung zu gespeichertem WiFi fehlgeschlagen, starte AP");
+            startAP();
+        }
+    } else {
+        startAP();
+    }
+
+    setupRoutes();
+    server.begin();
+
+    Serial.print("Webserver gestartet auf: ");
+    Serial.println(getIPAddress());
+
+    return true;
+}
+
+bool WebServerManager::startAP() {
+    WiFi.mode(WIFI_AP);
+    bool success = WiFi.softAP(WIFI_SSID, WIFI_PASSWORD);
+
+    if (success) {
+        Serial.println("Access Point gestartet");
+        Serial.print("SSID: ");
+        Serial.println(WIFI_SSID);
+        Serial.print("Password: ");
+        Serial.println(WIFI_PASSWORD);
+        Serial.print("IP: ");
+        Serial.println(WiFi.softAPIP());
+        apMode = true;
+    }
+
+    return success;
+}
+
+bool WebServerManager::connectToWiFi(const String& ssid, const String& password) {
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(ssid.c_str(), password.c_str());
+
+    Serial.print("Verbinde zu WiFi: ");
+    Serial.println(ssid);
+
+    int attempts = 0;
+    while (WiFi.status() != WL_CONNECTED && attempts < 20) {
+        delay(500);
+        Serial.print(".");
+        attempts++;
+    }
+    Serial.println();
+
+    if (WiFi.status() == WL_CONNECTED) {
+        Serial.println("WiFi verbunden!");
+        Serial.print("IP: ");
+        Serial.println(WiFi.localIP());
+        return true;
+    } else {
+        Serial.println("WiFi Verbindung fehlgeschlagen");
+        return false;
+    }
+}
+
+String WebServerManager::getIPAddress() {
+    if (apMode) {
+        return WiFi.softAPIP().toString();
+    } else {
+        return WiFi.localIP().toString();
+    }
+}
+
+void WebServerManager::handle() {
+    // AsyncWebServer läuft asynchron, nichts zu tun
+}
+
+void WebServerManager::setupRoutes() {
+    // Serve static files from LittleFS
+    server.serveStatic("/", LittleFS, "/").setDefaultFile("index.html");
+
+    // API Endpoints
+
+    // GET /api/countdowns - Alle Countdowns abrufen
+    server.on("/api/countdowns", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        handleGetCountdowns(request);
+    });
+
+    // POST /api/countdowns - Neuen Countdown hinzufügen
+    AsyncCallbackJsonWebHandler* addHandler = new AsyncCallbackJsonWebHandler("/api/countdowns", [this](AsyncWebServerRequest* request, JsonVariant& json) {
+        JsonDocument doc;
+        doc.set(json);
+
+        Countdown cd;
+        cd.uid = doc["uid"].as<String>();
+        cd.name = doc["name"].as<String>();
+        cd.targetDate = doc["targetDate"].as<String>();
+        cd.active = doc["active"].as<bool>();
+
+        if (storage.addCountdown(cd)) {
+            request->send(200, "application/json", "{\"success\":true}");
+        } else {
+            request->send(400, "application/json", "{\"success\":false,\"error\":\"Konnte Countdown nicht hinzufügen\"}");
+        }
+    });
+    server.addHandler(addHandler);
+
+    // PUT /api/countdowns/:uid - Countdown aktualisieren
+    AsyncCallbackJsonWebHandler* updateHandler = new AsyncCallbackJsonWebHandler("/api/countdowns/*", [this](AsyncWebServerRequest* request, JsonVariant& json) {
+        String uid = request->url().substring(request->url().lastIndexOf('/') + 1);
+
+        JsonDocument doc;
+        doc.set(json);
+
+        Countdown cd;
+        cd.uid = doc["uid"].as<String>();
+        cd.name = doc["name"].as<String>();
+        cd.targetDate = doc["targetDate"].as<String>();
+        cd.active = doc["active"].as<bool>();
+
+        if (storage.updateCountdown(uid, cd)) {
+            request->send(200, "application/json", "{\"success\":true}");
+        } else {
+            request->send(400, "application/json", "{\"success\":false,\"error\":\"Konnte Countdown nicht aktualisieren\"}");
+        }
+    }, 8192);
+    updateHandler->setMethod(HTTP_PUT);
+    server.addHandler(updateHandler);
+
+    // DELETE /api/countdowns/:uid - Countdown löschen
+    server.on("/api/countdowns/*", HTTP_DELETE, [this](AsyncWebServerRequest* request) {
+        handleDeleteCountdown(request);
+    });
+
+    // GET /api/wifi - WiFi Einstellungen abrufen
+    server.on("/api/wifi", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        handleGetWiFi(request);
+    });
+
+    // POST /api/wifi - WiFi Einstellungen setzen
+    AsyncCallbackJsonWebHandler* wifiHandler = new AsyncCallbackJsonWebHandler("/api/wifi", [this](AsyncWebServerRequest* request, JsonVariant& json) {
+        JsonDocument doc;
+        doc.set(json);
+
+        String ssid = doc["ssid"].as<String>();
+        String password = doc["password"].as<String>();
+
+        if (storage.saveWiFiCredentials(ssid, password)) {
+            request->send(200, "application/json", "{\"success\":true,\"message\":\"WiFi Einstellungen gespeichert. Neustart erforderlich.\"}");
+        } else {
+            request->send(400, "application/json", "{\"success\":false,\"error\":\"Konnte WiFi Einstellungen nicht speichern\"}");
+        }
+    });
+    server.addHandler(wifiHandler);
+
+    // GET /api/scan-card - Scanne RFID Karte
+    server.on("/api/scan-card", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        handleScanCard(request);
+    });
+
+    // GET /api/status - System Status
+    server.on("/api/status", HTTP_GET, [this](AsyncWebServerRequest* request) {
+        JsonDocument doc;
+        doc["apMode"] = apMode;
+        doc["ip"] = getIPAddress();
+        doc["ssid"] = apMode ? WIFI_SSID : WiFi.SSID();
+
+        String output;
+        serializeJson(doc, output);
+        request->send(200, "application/json", output);
+    });
+
+    // Restart ESP
+    server.on("/api/restart", HTTP_POST, [](AsyncWebServerRequest* request) {
+        request->send(200, "application/json", "{\"success\":true,\"message\":\"Neustarte...\"}");
+        delay(500);
+        ESP.restart();
+    });
+}
+
+void WebServerManager::handleGetCountdowns(AsyncWebServerRequest* request) {
+    JsonDocument doc;
+    JsonArray array = doc.to<JsonArray>();
+
+    std::vector<Countdown> countdowns = storage.getAllCountdowns();
+    for (const auto& cd : countdowns) {
+        JsonObject obj = array.add<JsonObject>();
+        obj["uid"] = cd.uid;
+        obj["name"] = cd.name;
+        obj["targetDate"] = cd.targetDate;
+        obj["active"] = cd.active;
+    }
+
+    String output;
+    serializeJson(doc, output);
+    request->send(200, "application/json", output);
+}
+
+void WebServerManager::handleDeleteCountdown(AsyncWebServerRequest* request) {
+    String uid = request->url().substring(request->url().lastIndexOf('/') + 1);
+
+    if (storage.deleteCountdown(uid)) {
+        request->send(200, "application/json", "{\"success\":true}");
+    } else {
+        request->send(400, "application/json", "{\"success\":false,\"error\":\"Konnte Countdown nicht löschen\"}");
+    }
+}
+
+void WebServerManager::handleGetWiFi(AsyncWebServerRequest* request) {
+    String ssid, password;
+    storage.getWiFiCredentials(ssid, password);
+
+    JsonDocument doc;
+    doc["ssid"] = ssid;
+    doc["hasPassword"] = !password.isEmpty();
+    doc["apMode"] = apMode;
+
+    String output;
+    serializeJson(doc, output);
+    request->send(200, "application/json", output);
+}
+
+void WebServerManager::handleScanCard(AsyncWebServerRequest* request) {
+    // Warte kurz auf eine Karte (nicht blockierend in Produktivcode!)
+    String uid = rfidReader.readCardUID();
+
+    if (uid.length() > 0) {
+        JsonDocument doc;
+        doc["success"] = true;
+        doc["uid"] = uid;
+
+        String output;
+        serializeJson(doc, output);
+        request->send(200, "application/json", output);
+    } else {
+        request->send(200, "application/json", "{\"success\":false,\"error\":\"Keine Karte gefunden\"}");
+    }
+}
