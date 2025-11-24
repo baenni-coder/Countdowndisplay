@@ -100,14 +100,13 @@ void WebServerManager::setupRoutes() {
 
     // POST /api/countdowns - Neuen Countdown hinzufügen
     AsyncCallbackJsonWebHandler* addHandler = new AsyncCallbackJsonWebHandler("/api/countdowns", [this](AsyncWebServerRequest* request, JsonVariant& json) {
-        JsonDocument doc;
-        doc.set(json);
+        JsonObject obj = json.as<JsonObject>();
 
         Countdown cd;
-        cd.uid = doc["uid"].as<String>();
-        cd.name = doc["name"].as<String>();
-        cd.targetDate = doc["targetDate"].as<String>();
-        cd.active = doc["active"].as<bool>();
+        cd.uid = obj["uid"].as<String>();
+        cd.name = obj["name"].as<String>();
+        cd.targetDate = obj["targetDate"].as<String>();
+        cd.active = obj["active"].as<bool>();
 
         if (storage.addCountdown(cd)) {
             request->send(200, "application/json", "{\"success\":true}");
@@ -121,14 +120,13 @@ void WebServerManager::setupRoutes() {
     AsyncCallbackJsonWebHandler* updateHandler = new AsyncCallbackJsonWebHandler("/api/countdowns/*", [this](AsyncWebServerRequest* request, JsonVariant& json) {
         String uid = request->url().substring(request->url().lastIndexOf('/') + 1);
 
-        JsonDocument doc;
-        doc.set(json);
+        JsonObject obj = json.as<JsonObject>();
 
         Countdown cd;
-        cd.uid = doc["uid"].as<String>();
-        cd.name = doc["name"].as<String>();
-        cd.targetDate = doc["targetDate"].as<String>();
-        cd.active = doc["active"].as<bool>();
+        cd.uid = obj["uid"].as<String>();
+        cd.name = obj["name"].as<String>();
+        cd.targetDate = obj["targetDate"].as<String>();
+        cd.active = obj["active"].as<bool>();
 
         if (storage.updateCountdown(uid, cd)) {
             request->send(200, "application/json", "{\"success\":true}");
@@ -151,11 +149,10 @@ void WebServerManager::setupRoutes() {
 
     // POST /api/wifi - WiFi Einstellungen setzen
     AsyncCallbackJsonWebHandler* wifiHandler = new AsyncCallbackJsonWebHandler("/api/wifi", [this](AsyncWebServerRequest* request, JsonVariant& json) {
-        JsonDocument doc;
-        doc.set(json);
+        JsonObject obj = json.as<JsonObject>();
 
-        String ssid = doc["ssid"].as<String>();
-        String password = doc["password"].as<String>();
+        String ssid = obj["ssid"].as<String>();
+        String password = obj["password"].as<String>();
 
         if (storage.saveWiFiCredentials(ssid, password)) {
             request->send(200, "application/json", "{\"success\":true,\"message\":\"WiFi Einstellungen gespeichert. Neustart erforderlich.\"}");
@@ -172,7 +169,7 @@ void WebServerManager::setupRoutes() {
 
     // GET /api/status - System Status
     server.on("/api/status", HTTP_GET, [this](AsyncWebServerRequest* request) {
-        JsonDocument doc;
+        DynamicJsonDocument doc(512);
         doc["apMode"] = apMode;
         doc["ip"] = getIPAddress();
         doc["ssid"] = apMode ? WIFI_SSID : WiFi.SSID();
@@ -191,12 +188,12 @@ void WebServerManager::setupRoutes() {
 }
 
 void WebServerManager::handleGetCountdowns(AsyncWebServerRequest* request) {
-    JsonDocument doc;
+    DynamicJsonDocument doc(4096);
     JsonArray array = doc.to<JsonArray>();
 
     std::vector<Countdown> countdowns = storage.getAllCountdowns();
     for (const auto& cd : countdowns) {
-        JsonObject obj = array.add<JsonObject>();
+        JsonObject obj = array.createNestedObject();
         obj["uid"] = cd.uid;
         obj["name"] = cd.name;
         obj["targetDate"] = cd.targetDate;
@@ -222,7 +219,7 @@ void WebServerManager::handleGetWiFi(AsyncWebServerRequest* request) {
     String ssid, password;
     storage.getWiFiCredentials(ssid, password);
 
-    JsonDocument doc;
+    DynamicJsonDocument doc(512);
     doc["ssid"] = ssid;
     doc["hasPassword"] = !password.isEmpty();
     doc["apMode"] = apMode;
@@ -237,7 +234,7 @@ void WebServerManager::handleScanCard(AsyncWebServerRequest* request) {
     String uid = rfidReader.readCardUID();
 
     if (uid.length() > 0) {
-        JsonDocument doc;
+        DynamicJsonDocument doc(256);
         doc["success"] = true;
         doc["uid"] = uid;
 

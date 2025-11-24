@@ -122,16 +122,16 @@ bool StorageManager::loadFromFile() {
 }
 
 String StorageManager::serializeToJson() {
-    JsonDocument doc;
+    DynamicJsonDocument doc(4096);
 
     // WiFi Einstellungen
     doc["wifi"]["ssid"] = wifiSSID;
     doc["wifi"]["password"] = wifiPassword;
 
     // Countdowns
-    JsonArray cdArray = doc["countdowns"].to<JsonArray>();
+    JsonArray cdArray = doc.createNestedArray("countdowns");
     for (const auto& cd : countdowns) {
-        JsonObject cdObj = cdArray.add<JsonObject>();
+        JsonObject cdObj = cdArray.createNestedObject();
         cdObj["uid"] = cd.uid;
         cdObj["name"] = cd.name;
         cdObj["targetDate"] = cd.targetDate;
@@ -144,7 +144,7 @@ String StorageManager::serializeToJson() {
 }
 
 bool StorageManager::deserializeFromJson(const String& json) {
-    JsonDocument doc;
+    DynamicJsonDocument doc(4096);
     DeserializationError error = deserializeJson(doc, json);
 
     if (error) {
