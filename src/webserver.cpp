@@ -99,46 +99,57 @@ void WebServerManager::setupRoutes() {
     });
 
     // POST /api/countdowns - Neuen Countdown hinzufügen
-    AsyncCallbackJsonWebHandler* addHandler = new AsyncCallbackJsonWebHandler("/api/countdowns", [this](AsyncWebServerRequest* request, JsonVariant& json) {
-        JsonObject obj = json.as<JsonObject>();
+    server.on("/api/countdowns", HTTP_POST, [](AsyncWebServerRequest* request) {}, NULL,
+        [this](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
+            DynamicJsonDocument doc(1024);
+            DeserializationError error = deserializeJson(doc, data, len);
 
-        Countdown cd;
-        cd.uid = obj["uid"].as<String>();
-        cd.name = obj["name"].as<String>();
-        cd.targetDate = obj["targetDate"].as<String>();
-        cd.active = obj["active"].as<bool>();
+            if (error) {
+                request->send(400, "application/json", "{\"success\":false,\"error\":\"Invalid JSON\"}");
+                return;
+            }
 
-        if (storage.addCountdown(cd)) {
-            request->send(200, "application/json", "{\"success\":true}");
-        } else {
-            request->send(400, "application/json", "{\"success\":false,\"error\":\"Konnte Countdown nicht hinzufügen\"}");
-        }
-    });
-    server.addHandler(addHandler);
+            Countdown cd;
+            cd.uid = doc["uid"].as<String>();
+            cd.name = doc["name"].as<String>();
+            cd.targetDate = doc["targetDate"].as<String>();
+            cd.active = doc["active"].as<bool>();
+
+            if (storage.addCountdown(cd)) {
+                request->send(200, "application/json", "{\"success\":true}");
+            } else {
+                request->send(400, "application/json", "{\"success\":false,\"error\":\"Konnte Countdown nicht hinzufügen\"}");
+            }
+        });
 
     // PUT /api/countdowns/:uid - Countdown aktualisieren
-    AsyncCallbackJsonWebHandler* updateHandler = new AsyncCallbackJsonWebHandler("/api/countdowns/*", [this](AsyncWebServerRequest* request, JsonVariant& json) {
-        String uid = request->url().substring(request->url().lastIndexOf('/') + 1);
+    server.on("^\\/api\\/countdowns\\/(.+)$", HTTP_PUT, [](AsyncWebServerRequest* request) {}, NULL,
+        [this](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
+            String uid = request->url().substring(request->url().lastIndexOf('/') + 1);
 
-        JsonObject obj = json.as<JsonObject>();
+            DynamicJsonDocument doc(1024);
+            DeserializationError error = deserializeJson(doc, data, len);
 
-        Countdown cd;
-        cd.uid = obj["uid"].as<String>();
-        cd.name = obj["name"].as<String>();
-        cd.targetDate = obj["targetDate"].as<String>();
-        cd.active = obj["active"].as<bool>();
+            if (error) {
+                request->send(400, "application/json", "{\"success\":false,\"error\":\"Invalid JSON\"}");
+                return;
+            }
 
-        if (storage.updateCountdown(uid, cd)) {
-            request->send(200, "application/json", "{\"success\":true}");
-        } else {
-            request->send(400, "application/json", "{\"success\":false,\"error\":\"Konnte Countdown nicht aktualisieren\"}");
-        }
-    }, 8192);
-    updateHandler->setMethod(HTTP_PUT);
-    server.addHandler(updateHandler);
+            Countdown cd;
+            cd.uid = doc["uid"].as<String>();
+            cd.name = doc["name"].as<String>();
+            cd.targetDate = doc["targetDate"].as<String>();
+            cd.active = doc["active"].as<bool>();
+
+            if (storage.updateCountdown(uid, cd)) {
+                request->send(200, "application/json", "{\"success\":true}");
+            } else {
+                request->send(400, "application/json", "{\"success\":false,\"error\":\"Konnte Countdown nicht aktualisieren\"}");
+            }
+        });
 
     // DELETE /api/countdowns/:uid - Countdown löschen
-    server.on("/api/countdowns/*", HTTP_DELETE, [this](AsyncWebServerRequest* request) {
+    server.on("^\\/api\\/countdowns\\/(.+)$", HTTP_DELETE, [this](AsyncWebServerRequest* request) {
         handleDeleteCountdown(request);
     });
 
@@ -148,19 +159,25 @@ void WebServerManager::setupRoutes() {
     });
 
     // POST /api/wifi - WiFi Einstellungen setzen
-    AsyncCallbackJsonWebHandler* wifiHandler = new AsyncCallbackJsonWebHandler("/api/wifi", [this](AsyncWebServerRequest* request, JsonVariant& json) {
-        JsonObject obj = json.as<JsonObject>();
+    server.on("/api/wifi", HTTP_POST, [](AsyncWebServerRequest* request) {}, NULL,
+        [this](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
+            DynamicJsonDocument doc(512);
+            DeserializationError error = deserializeJson(doc, data, len);
 
-        String ssid = obj["ssid"].as<String>();
-        String password = obj["password"].as<String>();
+            if (error) {
+                request->send(400, "application/json", "{\"success\":false,\"error\":\"Invalid JSON\"}");
+                return;
+            }
 
-        if (storage.saveWiFiCredentials(ssid, password)) {
-            request->send(200, "application/json", "{\"success\":true,\"message\":\"WiFi Einstellungen gespeichert. Neustart erforderlich.\"}");
-        } else {
-            request->send(400, "application/json", "{\"success\":false,\"error\":\"Konnte WiFi Einstellungen nicht speichern\"}");
-        }
-    });
-    server.addHandler(wifiHandler);
+            String ssid = doc["ssid"].as<String>();
+            String password = doc["password"].as<String>();
+
+            if (storage.saveWiFiCredentials(ssid, password)) {
+                request->send(200, "application/json", "{\"success\":true,\"message\":\"WiFi Einstellungen gespeichert. Neustart erforderlich.\"}");
+            } else {
+                request->send(400, "application/json", "{\"success\":false,\"error\":\"Konnte WiFi Einstellungen nicht speichern\"}");
+            }
+        });
 
     // GET /api/scan-card - Scanne RFID Karte
     server.on("/api/scan-card", HTTP_GET, [this](AsyncWebServerRequest* request) {
