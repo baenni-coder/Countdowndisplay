@@ -24,9 +24,9 @@ void setup() {
     Serial.println("   Countdown Display System");
     Serial.println("=================================\n");
 
-    // Initialisiere SPI Bus (wird von RFID und Display geteilt)
+    // Initialisiere SPI Bus für Display (Waveshare E-Paper ESP32 Driver Board verwendet eigene Pins)
     Serial.println("Initialisiere SPI Bus...");
-    SPI.begin(EPD_SCK_PIN, RFID_MISO_PIN, EPD_MOSI_PIN, -1);
+    SPI.begin(EPD_SCK_PIN, -1, EPD_MOSI_PIN, -1);  // Display SPI: CLK=13, DIN=14
     Serial.println("SPI Bus initialisiert");
 
     // Initialisiere Storage (LittleFS)
