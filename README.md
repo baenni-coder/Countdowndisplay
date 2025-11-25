@@ -11,10 +11,12 @@ Dieses Projekt ermöglicht es, verschiedene Countdowns auf einem E-Ink Display a
 - ⏱️ **Countdown in Tagen** bis zu wichtigen Ereignissen
 - 🏷️ **RFID-gesteuerte Auswahl** verschiedener Countdowns
 - 🖥️ **E-Ink Display** für energieeffiziente, augenschonende Anzeige
+- 🖼️ **Bildunterstützung** für personalisierte Countdowns
 - 🌐 **Webinterface** zur einfachen Konfiguration
 - 📡 **WiFi-Unterstützung** (Access Point & Client Modus)
 - 💾 **Persistente Speicherung** aller Einstellungen
 - 🕐 **Automatische Zeitsynchronisation** via NTP
+- 📅 **Deutsches Datumsformat** (DD.MM.YYYY)
 
 ## 🛠️ Hardware-Komponenten
 
@@ -96,13 +98,34 @@ Alle benötigten Bibliotheken sind in der `platformio.ini` definiert und werden 
 
 ```bash
 # Code kompilieren und hochladen
-pio run -t upload
+pio run --target upload
 
 # Filesystem (Webinterface) hochladen
-pio run -t uploadfs
+pio run --target uploadfs
+
+# Beide Schritte kombiniert (erst Code, dann Filesystem)
+pio run --target upload && pio run --target uploadfs
 
 # Serial Monitor öffnen
 pio device monitor
+```
+
+**Wichtig:** Das Filesystem muss hochgeladen werden, damit das Webinterface funktioniert!
+
+### 5. Updates vom Repository holen
+
+```bash
+# Neueste Änderungen vom Repository holen
+git pull
+
+# Abhängigkeiten aktualisieren (falls nötig)
+pio lib update
+
+# Code neu kompilieren und hochladen
+pio run --target upload
+
+# Webinterface-Dateien aktualisieren (wenn HTML/CSS/JS geändert wurden)
+pio run --target uploadfs
 ```
 
 ## 🚀 Erste Schritte
@@ -164,6 +187,75 @@ Halte die konfigurierte RFID-Karte an den Leser - der Countdown wird automatisch
 - System neu starten
 - Alle Einstellungen persistent gespeichert
 
+## 🖼️ Bilder für Countdowns
+
+Ab Version 1.1 können Countdowns mit Bildern versehen werden! Das Display zeigt dann ein Bild neben dem Countdown an.
+
+### Bildspezifikationen
+
+- **Format**: Monochrome BMP (1-bit Bitmap)
+- **Farbtiefe**: Schwarz-Weiß (keine Graustufen)
+- **Empfohlene Größe**: 200x200 bis 250x250 Pixel
+- **Maximale Größe**: 250x250 Pixel (größere Bilder werden beschnitten)
+- **Dateigröße**: Möglichst klein halten (< 10 KB empfohlen)
+
+### Bilder mit KI generieren
+
+Du kannst großartige Bilder mit KI-Tools wie DALL-E, Midjourney oder Stable Diffusion erstellen!
+
+**Beispiel-Prompt für ein Geburtstagsbild:**
+
+```
+Create a simple, minimalist black and white line art icon of a birthday cake
+with candles. High contrast, clean lines, suitable for monochrome display.
+Simple silhouette style, no gradients, pure black on white background.
+```
+
+**Beispiel-Prompt für ein Urlaubsbild:**
+
+```
+Create a minimalist black and white icon of a beach scene with palm tree and sun.
+Simple line art, high contrast, no gradients. Clean silhouette style suitable
+for 1-bit monochrome display.
+```
+
+**Tipps für gute Prompts:**
+- Verwende Begriffe wie "minimalist", "simple", "line art", "silhouette"
+- Betone "black and white", "monochrome", "high contrast"
+- Vermeide "gradients", "shading", "details"
+- Wähle einfache Motive mit klaren Konturen
+
+### Bild in BMP umwandeln (Windows Paint)
+
+1. **Bild speichern**: Speichere das generierte Bild (z.B. als PNG oder JPG)
+2. **In Paint öffnen**: Rechtsklick auf die Datei → "Bearbeiten" oder Paint öffnen und Datei laden
+3. **Größe anpassen** (falls nötig):
+   - Klicke auf "Größe ändern"
+   - Wähle "Pixel"
+   - Gib gewünschte Größe ein (z.B. 200x200)
+   - Haken bei "Seitenverhältnis beibehalten" setzen
+4. **Als Monochrom-BMP speichern**:
+   - Klicke auf "Datei" → "Speichern unter" → "BMP-Bild"
+   - Wähle Speicherort und Dateinamen
+   - Im Dialog unter "Farbformat" wähle: **"Monochrom-Bitmap"** oder **"Schwarzweiß-Bitmap"**
+   - Klicke "Speichern"
+
+### Bild hochladen
+
+1. Im Webinterface auf "Neu" oder "Bearbeiten" bei einem Countdown klicken
+2. Im Feld "Bild" auf den Button "Hochladen" klicken
+3. BMP-Datei auswählen
+4. Nach erfolgreichem Upload erscheint das Bild in der Auswahlliste
+5. Bild auswählen und Countdown speichern
+
+**Fertig!** Beim Vorhalten der RFID-Karte wird nun der Countdown mit Bild angezeigt.
+
+### Bildverwaltung
+
+- Hochgeladene Bilder werden im `/images` Verzeichnis im LittleFS gespeichert
+- Bilder können für mehrere Countdowns wiederverwendet werden
+- Um ein Bild zu löschen, musst du es manuell über den Serial Monitor entfernen (Zugriff auf LittleFS erforderlich)
+
 ## 🔧 Anpassungen
 
 ### Display-Layout anpassen
@@ -221,9 +313,11 @@ In `include/config.h`:
 REST API für erweiterte Integration:
 
 - `GET /api/countdowns` - Alle Countdowns abrufen
-- `POST /api/countdowns` - Countdown hinzufügen
+- `POST /api/countdowns` - Countdown hinzufügen (mit optionalem imagePath)
 - `PUT /api/countdowns/:uid` - Countdown aktualisieren
 - `DELETE /api/countdowns/:uid` - Countdown löschen
+- `POST /api/upload-image` - Bild hochladen (Multipart Form Data)
+- `GET /api/images` - Liste aller hochgeladenen Bilder
 - `GET /api/wifi` - WiFi Einstellungen abrufen
 - `POST /api/wifi` - WiFi Einstellungen setzen
 - `GET /api/scan-card` - RFID Karte scannen
