@@ -99,6 +99,17 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="countdown-image">Bild (optional, monochrome BMP):</label>
+                    <div class="input-with-button">
+                        <select id="countdown-image">
+                            <option value="">Kein Bild</option>
+                        </select>
+                        <button type="button" class="btn btn-secondary" onclick="showImageUpload()">Hochladen</button>
+                    </div>
+                    <small>Nur monochrome (1-bit) BMP-Bilder werden unterstützt</small>
+                </div>
+
+                <div class="form-group">
                     <label class="checkbox-label">
                         <input type="checkbox" id="countdown-active" checked>
                         Aktiv
@@ -108,6 +119,28 @@
                 <div class="modal-buttons">
                     <button type="button" class="btn btn-secondary" onclick="closeModal()">Abbrechen</button>
                     <button type="submit" class="btn btn-primary">Speichern</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal für Bild-Upload -->
+    <div id="image-upload-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Bild hochladen</h2>
+                <span class="close" onclick="closeImageUploadModal()">&times;</span>
+            </div>
+            <form id="image-upload-form" onsubmit="uploadImage(event)">
+                <div class="form-group">
+                    <label for="image-file">BMP-Bild auswählen:</label>
+                    <input type="file" id="image-file" accept=".bmp" required>
+                    <small>Nur monochrome (1-bit) BMP-Bilder, max. 250x250 Pixel empfohlen</small>
+                </div>
+
+                <div class="modal-buttons">
+                    <button type="button" class="btn btn-secondary" onclick="closeImageUploadModal()">Abbrechen</button>
+                    <button type="submit" class="btn btn-primary">Hochladen</button>
                 </div>
             </form>
         </div>

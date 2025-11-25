@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadStatus();
     loadCountdowns();
     loadWiFiSettings();
+    loadImages();
 });
 
 // Load system status
@@ -51,6 +52,7 @@ function renderCountdowns() {
     countdowns.forEach(countdown => {
         const daysRemaining = calculateDaysRemaining(countdown.targetDate);
         const isActive = countdown.active ? '' : 'inactive';
+        const hasImage = countdown.imagePath ? `🖼️ Bild: ${countdown.imagePath.split('/').pop()}` : '';
 
         const item = document.createElement('div');
         item.className = `countdown-item ${isActive}`;
@@ -59,6 +61,7 @@ function renderCountdowns() {
                 <h3>${countdown.name}</h3>
                 <p>📅 Datum: ${formatDate(countdown.targetDate)}</p>
                 <p>🔖 UID: ${countdown.uid}</p>
+                ${hasImage ? `<p>${hasImage}</p>` : ''}
                 ${countdown.active ? `<p class="days-remaining">⏱️ ${daysRemaining} Tage ${daysRemaining >= 0 ? 'verbleibend' : 'vergangen'}</p>` : '<p>⏸️ Inaktiv</p>'}
             </div>
             <div class="countdown-actions">
@@ -98,6 +101,7 @@ function showAddModal() {
     document.getElementById('edit-mode').value = 'add';
     document.getElementById('countdown-form').reset();
     document.getElementById('card-uid').value = '';
+    document.getElementById('countdown-image').value = '';
     document.getElementById('countdown-active').checked = true;
     document.getElementById('modal').classList.add('show');
 }
@@ -113,6 +117,7 @@ function editCountdown(uid) {
     document.getElementById('card-uid').value = countdown.uid;
     document.getElementById('countdown-name').value = countdown.name;
     document.getElementById('countdown-date').value = countdown.targetDate;
+    document.getElementById('countdown-image').value = countdown.imagePath || '';
     document.getElementById('countdown-active').checked = countdown.active;
     document.getElementById('modal').classList.add('show');
 }
@@ -161,6 +166,7 @@ async function saveCountdown(event) {
         uid: document.getElementById('card-uid').value.toUpperCase(),
         name: document.getElementById('countdown-name').value,
         targetDate: document.getElementById('countdown-date').value,
+        imagePath: document.getElementById('countdown-image').value,
         active: document.getElementById('countdown-active').checked
     };
 
@@ -286,5 +292,83 @@ window.onclick = function(event) {
     const modal = document.getElementById('modal');
     if (event.target === modal) {
         closeModal();
+    }
+    const imageModal = document.getElementById('image-upload-modal');
+    if (event.target === imageModal) {
+        closeImageUploadModal();
+    }
+}
+
+// Load available images
+async function loadImages() {
+    try {
+        const response = await fetch(`${API_BASE}/images`);
+        const images = await response.json();
+
+        const select = document.getElementById('countdown-image');
+        // Behalte die "Kein Bild" Option
+        select.innerHTML = '<option value="">Kein Bild</option>';
+
+        images.forEach(image => {
+            const option = document.createElement('option');
+            option.value = image.path;
+            option.textContent = image.name;
+            select.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Fehler beim Laden der Bilder:', error);
+    }
+}
+
+// Show image upload modal
+function showImageUpload() {
+    document.getElementById('image-upload-modal').classList.add('show');
+}
+
+// Close image upload modal
+function closeImageUploadModal() {
+    document.getElementById('image-upload-modal').classList.remove('show');
+    document.getElementById('image-upload-form').reset();
+}
+
+// Upload image
+async function uploadImage(event) {
+    event.preventDefault();
+
+    const fileInput = document.getElementById('image-file');
+    const file = fileInput.files[0];
+
+    if (!file) {
+        alert('Bitte wähle eine Datei aus');
+        return;
+    }
+
+    // Prüfe Dateityp
+    if (!file.name.toLowerCase().endsWith('.bmp')) {
+        alert('Nur BMP-Dateien werden unterstützt');
+        return;
+    }
+
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(`${API_BASE}/upload-image`, {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            alert('Bild erfolgreich hochgeladen!');
+            closeImageUploadModal();
+            loadImages(); // Aktualisiere Bildliste
+        } else {
+            alert('Fehler beim Hochladen: ' + (result.error || 'Unbekannter Fehler'));
+        }
+    } catch (error) {
+        console.error('Fehler beim Hochladen:', error);
+        alert('Fehler beim Hochladen des Bildes');
     }
 }
