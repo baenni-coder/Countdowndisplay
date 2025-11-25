@@ -51,75 +51,80 @@ void DisplayManager::showCountdown(const Countdown& countdown, int daysRemaining
         display->fillScreen(GxEPD_WHITE);
         drawBorder();
 
-        // Bild anzeigen, falls vorhanden (oben links, max 250x250 Pixel)
+        // Titel - immer mittig und oben (größerer Font)
+        display->setFont(&FreeSansBold24pt7b);
+        drawCenteredText(countdown.name, 80, &FreeSansBold24pt7b);
+
+        // Prüfe ob Bild vorhanden
         bool hasImage = false;
         if (countdown.imagePath.length() > 0) {
-            hasImage = drawBMPImage(countdown.imagePath, 50, 50, 250, 250);
+            // Bild links unten anzeigen (bündig mit Datumszeile)
+            // Position: x=60, y beginnt bei 180 (damit es bis zur Datumszeile bei ~430 reicht)
+            hasImage = drawBMPImage(countdown.imagePath, 60, 180, 250, 250);
         }
 
-        // Layout anpassen je nachdem, ob ein Bild vorhanden ist
-        int titleY = hasImage ? 80 : 100;
-        int daysY = hasImage ? 220 : 240;
-        int labelY = hasImage ? 270 : 290;
-        int dateY = hasImage ? 340 : 360;
-
-        // Wenn Bild vorhanden, Text nach rechts verschieben
-        int textX = hasImage ? 350 : 400;
-
-        // Titel
-        display->setFont(&FreeSansBold18pt7b);
-        if (hasImage) {
-            // Text rechts vom Bild
-            display->setCursor(textX, titleY);
-            display->print(countdown.name);
-        } else {
-            // Text zentriert
-            drawCenteredText(countdown.name, titleY, &FreeSansBold18pt7b);
-        }
-
-        // Tage verbleibend - große Anzeige
-        display->setFont(&FreeSansBold24pt7b);
-        String daysText = String(abs(daysRemaining));
         int16_t x1, y1;
         uint16_t w, h;
-        display->getTextBounds(daysText, 0, 0, &x1, &y1, &w, &h);
 
         if (hasImage) {
-            display->setCursor(textX + (400 - w) / 2, daysY);
-        } else {
-            display->setCursor((800 - w) / 2, daysY);
-        }
-        display->print(daysText);
+            // Layout mit Bild: Text rechts vom Bild
+            int textAreaX = 350;      // Startposition für Text rechts vom Bild
+            int textAreaWidth = 400;  // Verfügbare Breite für Text
 
-        // "Tage" Text
-        display->setFont(&FreeSansBold18pt7b);
-        String labelText = "Tage";
-        if (daysRemaining < 0) {
-            labelText = "Tage her";
-        } else if (daysRemaining == 0) {
-            labelText = "Heute!";
-        } else if (daysRemaining == 1) {
-            labelText = "Tag";
-        }
+            // Tage verbleibend - sehr große Anzeige
+            display->setFont(&FreeSansBold24pt7b);
+            String daysText = String(abs(daysRemaining));
+            display->getTextBounds(daysText, 0, 0, &x1, &y1, &w, &h);
+            display->setCursor(textAreaX + (textAreaWidth - w) / 2, 240);
+            display->print(daysText);
 
-        if (hasImage) {
+            // "Tage" Label (größerer Font)
+            display->setFont(&FreeSansBold18pt7b);
+            String labelText = "Tage";
+            if (daysRemaining < 0) {
+                labelText = "Tage her";
+            } else if (daysRemaining == 0) {
+                labelText = "Heute!";
+            } else if (daysRemaining == 1) {
+                labelText = "Tag";
+            }
             display->getTextBounds(labelText, 0, 0, &x1, &y1, &w, &h);
-            display->setCursor(textX + (400 - w) / 2, labelY);
+            display->setCursor(textAreaX + (textAreaWidth - w) / 2, 300);
             display->print(labelText);
-        } else {
-            drawCenteredText(labelText, labelY, &FreeSansBold18pt7b);
-        }
 
-        // Zieldatum (in deutscher Schreibweise)
-        display->setFont(&FreeSans12pt7b);
-        String dateStr = "Datum: " + formatDateGerman(countdown.targetDate);
-
-        if (hasImage) {
+            // Datum (größerer Font, bündig mit Bildunterkante)
+            display->setFont(&FreeSans18pt7b);
+            String dateStr = formatDateGerman(countdown.targetDate);
             display->getTextBounds(dateStr, 0, 0, &x1, &y1, &w, &h);
-            display->setCursor(textX + (400 - w) / 2, dateY);
+            display->setCursor(textAreaX + (textAreaWidth - w) / 2, 420);
             display->print(dateStr);
+
         } else {
-            drawCenteredText(dateStr, dateY, &FreeSans12pt7b);
+            // Layout ohne Bild: Alles zentriert, größere Fonts
+
+            // Tage verbleibend - extra große Anzeige
+            display->setFont(&FreeSansBold24pt7b);
+            String daysText = String(abs(daysRemaining));
+            display->getTextBounds(daysText, 0, 0, &x1, &y1, &w, &h);
+            display->setCursor((800 - w) / 2, 260);
+            display->print(daysText);
+
+            // "Tage" Label (größerer Font)
+            display->setFont(&FreeSansBold18pt7b);
+            String labelText = "Tage";
+            if (daysRemaining < 0) {
+                labelText = "Tage her";
+            } else if (daysRemaining == 0) {
+                labelText = "Heute!";
+            } else if (daysRemaining == 1) {
+                labelText = "Tag";
+            }
+            drawCenteredText(labelText, 330, &FreeSansBold18pt7b);
+
+            // Datum (größerer Font)
+            display->setFont(&FreeSans18pt7b);
+            String dateStr = formatDateGerman(countdown.targetDate);
+            drawCenteredText(dateStr, 390, &FreeSans18pt7b);
         }
 
     } while (display->nextPage());
