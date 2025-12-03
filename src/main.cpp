@@ -15,10 +15,11 @@ String currentCardUID = "";
 Countdown* currentCountdown = nullptr;
 unsigned long lastCardCheck = 0;
 unsigned long lastDisplayUpdate = 0;
+int lastUpdateDay = -1;  // Speichert den Tag der letzten Aktualisierung (für Mitternachts-Check)
 bool displayNeedsUpdate = true;
 
 const unsigned long CARD_CHECK_INTERVAL = 1000;    // Prüfe alle 1 Sekunde auf Karte
-const unsigned long DISPLAY_UPDATE_INTERVAL = 3600000; // Update Display alle Stunde (für Datum-Änderung)
+const unsigned long MIDNIGHT_CHECK_INTERVAL = 60000; // Prüfe alle 60 Sekunden auf Mitternacht
 
 void setup() {
     Serial.begin(115200);
@@ -142,6 +143,12 @@ void loop() {
                 }
 
                 lastDisplayUpdate = currentMillis;  // Zeitstempel aktualisieren
+
+                // Speichere aktuellen Tag für Mitternachts-Check
+                time_t now = time(nullptr);
+                struct tm* timeinfo = localtime(&now);
+                lastUpdateDay = timeinfo->tm_mday;
+
                 displayNeedsUpdate = false;
             } else {
                 Serial.println("Keine Konfiguration für diese Karte gefunden");
@@ -151,16 +158,36 @@ void loop() {
         }
     }
 
-    // Periodisches Display-Update (nur für Datum-Änderungen um Mitternacht)
+    // Mitternachts-Update: Prüfe ob neuer Tag begonnen hat
     if (currentCountdown != nullptr && !displayNeedsUpdate) {
-        if (currentMillis - lastDisplayUpdate >= DISPLAY_UPDATE_INTERVAL) {
+        // Prüfe alle 60 Sekunden auf Tageswechsel
+        if (currentMillis - lastDisplayUpdate >= MIDNIGHT_CHECK_INTERVAL) {
             lastDisplayUpdate = currentMillis;
 
-            int daysRemaining = displayManager.calculateDaysRemaining(currentCountdown->targetDate);
+            // Hole aktuelle Zeit
+            time_t now = time(nullptr);
+            struct tm* timeinfo = localtime(&now);
+            int currentDay = timeinfo->tm_mday;
 
-            if (daysRemaining != -9999) {
-                Serial.println("Periodisches Display-Update (Datum-Wechsel)");
-                displayManager.showCountdown(*currentCountdown, daysRemaining);
+            // Wenn der Tag sich geändert hat (nach Mitternacht)
+            if (lastUpdateDay != -1 && currentDay != lastUpdateDay) {
+                lastUpdateDay = currentDay;
+
+                int daysRemaining = displayManager.calculateDaysRemaining(currentCountdown->targetDate);
+
+                if (daysRemaining != -9999) {
+                    Serial.println("🌙 Mitternachts-Update: Neuer Tag erkannt!");
+                    Serial.print("   Datum: ");
+                    Serial.print(timeinfo->tm_mday);
+                    Serial.print(".");
+                    Serial.print(timeinfo->tm_mon + 1);
+                    Serial.print(".");
+                    Serial.println(timeinfo->tm_year + 1900);
+                    Serial.print("   Aktualisiere Countdown: ");
+                    Serial.println(currentCountdown->name);
+
+                    displayManager.showCountdown(*currentCountdown, daysRemaining);
+                }
             }
         }
     }
