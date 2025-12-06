@@ -107,12 +107,12 @@ void loop() {
 
         String uid = rfidReader.readCardUID();
 
-        // Wenn keine Karte erkannt wurde, zurücksetzen
+        // Wenn keine Karte erkannt wurde, UID zurücksetzen
         if (uid.length() == 0) {
             if (currentCardUID.length() > 0) {
-                Serial.println("Karte entfernt");
+                Serial.println("Karte entfernt - Countdown bleibt auf Display");
                 currentCardUID = "";
-                currentCountdown = nullptr;
+                // currentCountdown NICHT auf nullptr setzen - bleibt auf Display!
             }
         }
         // Wenn eine neue Karte erkannt wurde
