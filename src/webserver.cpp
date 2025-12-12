@@ -7,7 +7,7 @@
 // Notwendig weil Regex-Patterns bei AsyncWebServer nicht funktionieren
 class CountdownPutHandler : public AsyncWebHandler {
 public:
-    bool canHandle(AsyncWebServerRequest *request) override {
+    bool canHandle(AsyncWebServerRequest *request) const override {
         // Prüfe ob es ein PUT Request für /api/countdowns/:uid ist
         if (request->method() == HTTP_PUT &&
             request->url().startsWith("/api/countdowns/") &&
@@ -18,7 +18,7 @@ public:
         return false;
     }
 
-    void handleRequest(AsyncWebServerRequest *request) override {
+    void handleRequest(AsyncWebServerRequest *request) const override {
         // Wird aufgerufen wenn kein Body vorhanden ist
         Serial.println("CountdownPutHandler: handleRequest aufgerufen (sollte nicht passieren)");
         request->send(400, "application/json", "{\"success\":false,\"error\":\"Body fehlt\"}");
