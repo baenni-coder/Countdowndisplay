@@ -18,7 +18,7 @@ public:
         return false;
     }
 
-    void handleRequest(AsyncWebServerRequest *request) const override {
+    void handleRequest(AsyncWebServerRequest *request) override {
         // Wird aufgerufen wenn kein Body vorhanden ist
         Serial.println("CountdownPutHandler: handleRequest aufgerufen (sollte nicht passieren)");
         request->send(400, "application/json", "{\"success\":false,\"error\":\"Body fehlt\"}");
