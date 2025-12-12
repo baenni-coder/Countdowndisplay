@@ -121,7 +121,8 @@ void WebServerManager::setupRoutes() {
         });
 
     // PUT /api/countdowns/:uid - Countdown aktualisieren
-    server.on("^\\/api\\/countdowns\\/(.+)$", HTTP_PUT, [](AsyncWebServerRequest* request) {}, NULL,
+    // HINWEIS: Regex ohne Anchors ^ und $, da diese bei AsyncWebServer Probleme machen
+    server.on("/api/countdowns/.*", HTTP_PUT, [](AsyncWebServerRequest* request) {}, NULL,
         [this](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
             Serial.println("PUT Request empfangen");
             Serial.print("URL: ");
@@ -165,9 +166,8 @@ void WebServerManager::setupRoutes() {
         });
 
     // DELETE /api/countdowns/:uid - Countdown löschen
-    server.on("^\\/api\\/countdowns\\/(.+)$", HTTP_DELETE, [this](AsyncWebServerRequest* request) {
-        handleDeleteCountdown(request);
-    });
+    // HINWEIS: DELETE wird im onNotFound() Handler behandelt, da Regex-Patterns nicht funktionieren
+    // server.on() für DELETE ist daher auskommentiert
 
     // GET /api/wifi - WiFi Einstellungen abrufen
     server.on("/api/wifi", HTTP_GET, [this](AsyncWebServerRequest* request) {
@@ -285,6 +285,54 @@ void WebServerManager::setupRoutes() {
         String output;
         serializeJson(doc, output);
         request->send(200, "application/json", output);
+    });
+
+    // onNotFound Handler für API-Requests die nicht gematched wurden
+    // WORKAROUND: Regex-Patterns funktionieren nicht zuverlässig mit AsyncWebServer
+    // Deshalb fangen wir DELETE/PUT /api/countdowns/:uid hier ab
+    server.onNotFound([this](AsyncWebServerRequest* request) {
+        String url = request->url();
+
+        Serial.print("onNotFound: ");
+        Serial.print(request->methodToString());
+        Serial.print(" ");
+        Serial.println(url);
+
+        // Prüfe ob es ein API-Request für einen spezifischen Countdown ist
+        if (url.startsWith("/api/countdowns/") && url.length() > 16) {
+            String uid = url.substring(16); // Extrahiere UID nach "/api/countdowns/"
+
+            Serial.print("API Request erkannt, UID: ");
+            Serial.println(uid);
+
+            if (request->method() == HTTP_DELETE) {
+                Serial.println("DELETE Request wird verarbeitet");
+                handleDeleteCountdown(request);
+                return;
+            }
+            else if (request->method() == HTTP_PUT) {
+                Serial.println("PUT Request wird verarbeitet - FEHLER: Body fehlt");
+                // PUT hat einen Body, der hier nicht verfügbar ist
+                request->send(501, "application/json", "{\"success\":false,\"error\":\"PUT via onNotFound nicht unterstützt\"}");
+                return;
+            }
+        }
+
+        // Für alle anderen 404s: Serve static files
+        // Versuche die Datei als statische Datei zu laden
+        if (LittleFS.exists(url)) {
+            request->send(LittleFS, url);
+        } else if (url.endsWith("/")) {
+            // Versuche index.html zu laden
+            String indexPath = url + "index.html";
+            if (LittleFS.exists(indexPath)) {
+                request->send(LittleFS, indexPath, "text/html");
+            } else {
+                request->send(404, "text/plain", "Not Found");
+            }
+        } else {
+            request->send(404, "text/plain", "Not Found");
+        }
     });
 
     // Serve static files from LittleFS - MUSS am Ende stehen!
