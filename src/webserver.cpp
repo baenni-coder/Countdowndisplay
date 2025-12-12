@@ -88,10 +88,7 @@ void WebServerManager::handle() {
 }
 
 void WebServerManager::setupRoutes() {
-    // Serve static files from LittleFS
-    server.serveStatic("/", LittleFS, "/").setDefaultFile("index.html");
-
-    // API Endpoints
+    // API Endpoints zuerst definieren (vor serveStatic!)
 
     // GET /api/countdowns - Alle Countdowns abrufen
     server.on("/api/countdowns", HTTP_GET, [this](AsyncWebServerRequest* request) {
@@ -289,6 +286,11 @@ void WebServerManager::setupRoutes() {
         serializeJson(doc, output);
         request->send(200, "application/json", output);
     });
+
+    // Serve static files from LittleFS - MUSS am Ende stehen!
+    // Diese Zeile fängt ALLE nicht-gematchten Requests ab und serviert statische Dateien.
+    // Wenn sie am Anfang steht, werden die API-Routes nie erreicht!
+    server.serveStatic("/", LittleFS, "/").setDefaultFile("index.html");
 }
 
 void WebServerManager::handleGetCountdowns(AsyncWebServerRequest* request) {
