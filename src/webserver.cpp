@@ -88,10 +88,7 @@ void WebServerManager::handle() {
 }
 
 void WebServerManager::setupRoutes() {
-    // Serve static files from LittleFS
-    server.serveStatic("/", LittleFS, "/").setDefaultFile("index.html");
-
-    // API Endpoints
+    // API Endpoints zuerst definieren (vor serveStatic!)
 
     // GET /api/countdowns - Alle Countdowns abrufen
     server.on("/api/countdowns", HTTP_GET, [this](AsyncWebServerRequest* request) {
@@ -126,12 +123,20 @@ void WebServerManager::setupRoutes() {
     // PUT /api/countdowns/:uid - Countdown aktualisieren
     server.on("^\\/api\\/countdowns\\/(.+)$", HTTP_PUT, [](AsyncWebServerRequest* request) {}, NULL,
         [this](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
+            Serial.println("PUT Request empfangen");
+            Serial.print("URL: ");
+            Serial.println(request->url());
+
             String uid = request->url().substring(request->url().lastIndexOf('/') + 1);
+            Serial.print("Extrahierte UID: ");
+            Serial.println(uid);
 
             DynamicJsonDocument doc(1024);
             DeserializationError error = deserializeJson(doc, data, len);
 
             if (error) {
+                Serial.print("JSON Parse Fehler: ");
+                Serial.println(error.c_str());
                 request->send(400, "application/json", "{\"success\":false,\"error\":\"Invalid JSON\"}");
                 return;
             }
@@ -143,7 +148,16 @@ void WebServerManager::setupRoutes() {
             cd.imagePath = doc["imagePath"] | "";
             cd.active = doc["active"].as<bool>();
 
-            if (storage.updateCountdown(uid, cd)) {
+            Serial.print("Update Countdown: ");
+            Serial.print(cd.name);
+            Serial.print(", ImagePath: ");
+            Serial.println(cd.imagePath);
+
+            bool result = storage.updateCountdown(uid, cd);
+            Serial.print("Update Result: ");
+            Serial.println(result ? "Erfolgreich" : "Fehlgeschlagen");
+
+            if (result) {
                 request->send(200, "application/json", "{\"success\":true}");
             } else {
                 request->send(400, "application/json", "{\"success\":false,\"error\":\"Konnte Countdown nicht aktualisieren\"}");
@@ -272,6 +286,11 @@ void WebServerManager::setupRoutes() {
         serializeJson(doc, output);
         request->send(200, "application/json", output);
     });
+
+    // Serve static files from LittleFS - MUSS am Ende stehen!
+    // Diese Zeile fängt ALLE nicht-gematchten Requests ab und serviert statische Dateien.
+    // Wenn sie am Anfang steht, werden die API-Routes nie erreicht!
+    server.serveStatic("/", LittleFS, "/").setDefaultFile("index.html");
 }
 
 void WebServerManager::handleGetCountdowns(AsyncWebServerRequest* request) {
@@ -294,9 +313,25 @@ void WebServerManager::handleGetCountdowns(AsyncWebServerRequest* request) {
 }
 
 void WebServerManager::handleDeleteCountdown(AsyncWebServerRequest* request) {
-    String uid = request->url().substring(request->url().lastIndexOf('/') + 1);
+    Serial.println("DELETE Request empfangen");
+    Serial.print("URL: ");
+    Serial.println(request->url());
 
-    if (storage.deleteCountdown(uid)) {
+    String uid = request->url().substring(request->url().lastIndexOf('/') + 1);
+    Serial.print("Extrahierte UID: ");
+    Serial.println(uid);
+
+    if (uid.length() == 0) {
+        Serial.println("FEHLER: UID ist leer!");
+        request->send(400, "application/json", "{\"success\":false,\"error\":\"Keine UID angegeben\"}");
+        return;
+    }
+
+    bool result = storage.deleteCountdown(uid);
+    Serial.print("Delete Result: ");
+    Serial.println(result ? "Erfolgreich" : "Fehlgeschlagen");
+
+    if (result) {
         request->send(200, "application/json", "{\"success\":true}");
     } else {
         request->send(400, "application/json", "{\"success\":false,\"error\":\"Konnte Countdown nicht löschen\"}");

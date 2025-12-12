@@ -58,9 +58,18 @@ void DisplayManager::showCountdown(const Countdown& countdown, int daysRemaining
         // Prüfe ob Bild vorhanden
         bool hasImage = false;
         if (countdown.imagePath.length() > 0) {
+            Serial.print("Versuche Bild zu laden: ");
+            Serial.println(countdown.imagePath);
             // Bild links unten anzeigen (bündig mit Datumszeile)
             // Position: x=60, y beginnt bei 180 (damit es bis zur Datumszeile bei ~430 reicht)
             hasImage = drawBMPImage(countdown.imagePath, 60, 180, 250, 250);
+            if (hasImage) {
+                Serial.println("✓ Bild erfolgreich geladen und gezeichnet");
+            } else {
+                Serial.println("✗ Bild konnte nicht geladen werden");
+            }
+        } else {
+            Serial.println("Kein Bildpfad angegeben - zeige nur Text");
         }
 
         int16_t x1, y1;
