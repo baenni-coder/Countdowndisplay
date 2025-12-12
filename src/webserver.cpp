@@ -3,6 +3,73 @@
 #include "rfid.h"
 #include "config.h"
 
+// Custom Handler für PUT /api/countdowns/:uid
+// Notwendig weil Regex-Patterns bei AsyncWebServer nicht funktionieren
+class CountdownPutHandler : public AsyncWebHandler {
+public:
+    bool canHandle(AsyncWebServerRequest *request) override {
+        // Prüfe ob es ein PUT Request für /api/countdowns/:uid ist
+        if (request->method() == HTTP_PUT &&
+            request->url().startsWith("/api/countdowns/") &&
+            request->url().length() > 16) {
+            Serial.println("CountdownPutHandler: canHandle = true");
+            return true;
+        }
+        return false;
+    }
+
+    void handleRequest(AsyncWebServerRequest *request) override {
+        // Wird aufgerufen wenn kein Body vorhanden ist
+        Serial.println("CountdownPutHandler: handleRequest aufgerufen (sollte nicht passieren)");
+        request->send(400, "application/json", "{\"success\":false,\"error\":\"Body fehlt\"}");
+    }
+
+    void handleBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) override {
+        // Wird für den Request-Body aufgerufen
+        Serial.println("CountdownPutHandler: handleBody aufgerufen");
+        Serial.print("URL: ");
+        Serial.println(request->url());
+        Serial.print("Body length: ");
+        Serial.println(len);
+
+        String uid = request->url().substring(16); // Nach "/api/countdowns/"
+        Serial.print("Extrahierte UID: ");
+        Serial.println(uid);
+
+        DynamicJsonDocument doc(1024);
+        DeserializationError error = deserializeJson(doc, data, len);
+
+        if (error) {
+            Serial.print("JSON Parse Fehler: ");
+            Serial.println(error.c_str());
+            request->send(400, "application/json", "{\"success\":false,\"error\":\"Invalid JSON\"}");
+            return;
+        }
+
+        Countdown cd;
+        cd.uid = doc["uid"].as<String>();
+        cd.name = doc["name"].as<String>();
+        cd.targetDate = doc["targetDate"].as<String>();
+        cd.imagePath = doc["imagePath"] | "";
+        cd.active = doc["active"].as<bool>();
+
+        Serial.print("Update Countdown: ");
+        Serial.print(cd.name);
+        Serial.print(", ImagePath: ");
+        Serial.println(cd.imagePath);
+
+        bool result = storage.updateCountdown(uid, cd);
+        Serial.print("Update Result: ");
+        Serial.println(result ? "Erfolgreich" : "Fehlgeschlagen");
+
+        if (result) {
+            request->send(200, "application/json", "{\"success\":true}");
+        } else {
+            request->send(400, "application/json", "{\"success\":false,\"error\":\"Konnte Countdown nicht aktualisieren\"}");
+        }
+    }
+};
+
 WebServerManager webServer;
 
 WebServerManager::WebServerManager() : server(80), apMode(true) {
@@ -121,49 +188,9 @@ void WebServerManager::setupRoutes() {
         });
 
     // PUT /api/countdowns/:uid - Countdown aktualisieren
-    // HINWEIS: Regex ohne Anchors ^ und $, da diese bei AsyncWebServer Probleme machen
-    server.on("/api/countdowns/.*", HTTP_PUT, [](AsyncWebServerRequest* request) {}, NULL,
-        [this](AsyncWebServerRequest* request, uint8_t* data, size_t len, size_t index, size_t total) {
-            Serial.println("PUT Request empfangen");
-            Serial.print("URL: ");
-            Serial.println(request->url());
-
-            String uid = request->url().substring(request->url().lastIndexOf('/') + 1);
-            Serial.print("Extrahierte UID: ");
-            Serial.println(uid);
-
-            DynamicJsonDocument doc(1024);
-            DeserializationError error = deserializeJson(doc, data, len);
-
-            if (error) {
-                Serial.print("JSON Parse Fehler: ");
-                Serial.println(error.c_str());
-                request->send(400, "application/json", "{\"success\":false,\"error\":\"Invalid JSON\"}");
-                return;
-            }
-
-            Countdown cd;
-            cd.uid = doc["uid"].as<String>();
-            cd.name = doc["name"].as<String>();
-            cd.targetDate = doc["targetDate"].as<String>();
-            cd.imagePath = doc["imagePath"] | "";
-            cd.active = doc["active"].as<bool>();
-
-            Serial.print("Update Countdown: ");
-            Serial.print(cd.name);
-            Serial.print(", ImagePath: ");
-            Serial.println(cd.imagePath);
-
-            bool result = storage.updateCountdown(uid, cd);
-            Serial.print("Update Result: ");
-            Serial.println(result ? "Erfolgreich" : "Fehlgeschlagen");
-
-            if (result) {
-                request->send(200, "application/json", "{\"success\":true}");
-            } else {
-                request->send(400, "application/json", "{\"success\":false,\"error\":\"Konnte Countdown nicht aktualisieren\"}");
-            }
-        });
+    // HINWEIS: Wird durch CountdownPutHandler behandelt (siehe oben)
+    // Muss als custom Handler registriert werden, da Regex-Patterns nicht funktionieren
+    server.addHandler(new CountdownPutHandler());
 
     // DELETE /api/countdowns/:uid - Countdown löschen
     // HINWEIS: DELETE wird im onNotFound() Handler behandelt, da Regex-Patterns nicht funktionieren
@@ -311,9 +338,10 @@ void WebServerManager::setupRoutes() {
                 return;
             }
             else if (request->method() == HTTP_PUT) {
-                Serial.println("PUT Request wird verarbeitet - FEHLER: Body fehlt");
-                // PUT hat einen Body, der hier nicht verfügbar ist
-                request->send(501, "application/json", "{\"success\":false,\"error\":\"PUT via onNotFound nicht unterstützt\"}");
+                Serial.println("WARNUNG: PUT Request im onNotFound Handler!");
+                Serial.println("Der CountdownPutHandler sollte diesen Request abfangen!");
+                // PUT sollte vom CountdownPutHandler behandelt werden
+                request->send(500, "application/json", "{\"success\":false,\"error\":\"PUT Handler nicht aktiv\"}");
                 return;
             }
         }
