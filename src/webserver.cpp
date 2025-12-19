@@ -19,18 +19,29 @@ public:
     }
 
     void handleRequest(AsyncWebServerRequest *request) override {
-        // Wird aufgerufen wenn kein Body vorhanden ist
-        Serial.println("CountdownPutHandler: handleRequest aufgerufen (sollte nicht passieren)");
-        request->send(400, "application/json", "{\"success\":false,\"error\":\"Body fehlt\"}");
+        // Wird nach handleBody() aufgerufen - aber wir haben schon in handleBody() geantwortet
+        // Daher tun wir hier nichts (request->send() wurde bereits aufgerufen)
+        Serial.println("CountdownPutHandler: handleRequest aufgerufen (Response bereits in handleBody gesendet)");
     }
 
     void handleBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) override {
-        // Wird für den Request-Body aufgerufen
-        Serial.println("CountdownPutHandler: handleBody aufgerufen");
+        // Body wird in Chunks gesendet - wir müssen auf den letzten Chunk warten
+        Serial.print("CountdownPutHandler: handleBody Chunk - index=");
+        Serial.print(index);
+        Serial.print(", len=");
+        Serial.print(len);
+        Serial.print(", total=");
+        Serial.println(total);
+
+        // Nur beim letzten Chunk verarbeiten
+        if (index + len != total) {
+            Serial.println("Warte auf weitere Chunks...");
+            return;
+        }
+
+        Serial.println("Letzter Chunk empfangen, verarbeite Request");
         Serial.print("URL: ");
         Serial.println(request->url());
-        Serial.print("Body length: ");
-        Serial.println(len);
 
         String uid = request->url().substring(16); // Nach "/api/countdowns/"
         Serial.print("Extrahierte UID: ");
