@@ -305,6 +305,8 @@ async function loadImages() {
         const response = await fetch(`${API_BASE}/images`);
         const images = await response.json();
 
+        console.log('Geladene Bilder:', images); // DEBUG
+
         // Update dropdown
         const select = document.getElementById('countdown-image');
         // Behalte die "Kein Bild" Option
@@ -319,6 +321,13 @@ async function loadImages() {
 
         // Update image list with delete buttons
         const listElement = document.getElementById('image-list');
+        console.log('Image list element:', listElement); // DEBUG
+
+        if (!listElement) {
+            console.error('image-list Element nicht gefunden!');
+            return;
+        }
+
         if (images.length === 0) {
             listElement.innerHTML = '<p class="loading">Keine Bilder hochgeladen</p>';
             return;
@@ -326,6 +335,7 @@ async function loadImages() {
 
         listElement.innerHTML = '';
         images.forEach(image => {
+            console.log('Füge Bild hinzu:', image.name); // DEBUG
             const item = document.createElement('div');
             item.className = 'countdown-item';
             item.innerHTML = `
@@ -340,6 +350,7 @@ async function loadImages() {
             `;
             listElement.appendChild(item);
         });
+        console.log('Bildliste aktualisiert, Anzahl:', images.length); // DEBUG
     } catch (error) {
         console.error('Fehler beim Laden der Bilder:', error);
     }
