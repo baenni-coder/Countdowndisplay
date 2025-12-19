@@ -357,6 +357,28 @@ void WebServerManager::setupRoutes() {
             }
         }
 
+        // Prüfe ob es ein DELETE Request für ein Bild ist: /api/images/:filename
+        if (url.startsWith("/api/images/") && url.length() > 12 && request->method() == HTTP_DELETE) {
+            String filename = url.substring(12); // Nach "/api/images/"
+            Serial.print("DELETE Image Request: ");
+            Serial.println(filename);
+
+            String fullPath = "/images/" + filename;
+            if (LittleFS.exists(fullPath)) {
+                if (LittleFS.remove(fullPath)) {
+                    Serial.println("Bild erfolgreich gelöscht: " + fullPath);
+                    request->send(200, "application/json", "{\"success\":true}");
+                } else {
+                    Serial.println("Fehler beim Löschen: " + fullPath);
+                    request->send(500, "application/json", "{\"success\":false,\"error\":\"Konnte Bild nicht löschen\"}");
+                }
+            } else {
+                Serial.println("Bild nicht gefunden: " + fullPath);
+                request->send(404, "application/json", "{\"success\":false,\"error\":\"Bild nicht gefunden\"}");
+            }
+            return;
+        }
+
         // Für alle anderen 404s: Serve static files
         // Versuche die Datei als statische Datei zu laden
         if (LittleFS.exists(url)) {
