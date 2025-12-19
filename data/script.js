@@ -305,6 +305,7 @@ async function loadImages() {
         const response = await fetch(`${API_BASE}/images`);
         const images = await response.json();
 
+        // Update dropdown
         const select = document.getElementById('countdown-image');
         // Behalte die "Kein Bild" Option
         select.innerHTML = '<option value="">Kein Bild</option>';
@@ -315,8 +316,57 @@ async function loadImages() {
             option.textContent = image.name;
             select.appendChild(option);
         });
+
+        // Update image list with delete buttons
+        const listElement = document.getElementById('image-list');
+        if (images.length === 0) {
+            listElement.innerHTML = '<p class="loading">Keine Bilder hochgeladen</p>';
+            return;
+        }
+
+        listElement.innerHTML = '';
+        images.forEach(image => {
+            const item = document.createElement('div');
+            item.className = 'countdown-item';
+            item.innerHTML = `
+                <div class="countdown-info">
+                    <h3>🖼️ ${image.name}</h3>
+                    <p>Größe: ${Math.round(image.size / 1024)} KB</p>
+                    <p>Pfad: ${image.path}</p>
+                </div>
+                <div class="countdown-actions">
+                    <button class="btn btn-danger" onclick="deleteImage('${image.name}')">Löschen</button>
+                </div>
+            `;
+            listElement.appendChild(item);
+        });
     } catch (error) {
         console.error('Fehler beim Laden der Bilder:', error);
+    }
+}
+
+// Delete image
+async function deleteImage(filename) {
+    if (!confirm(`Bild "${filename}" wirklich löschen?`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}/images/${filename}`, {
+            method: 'DELETE'
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            alert('Bild erfolgreich gelöscht!');
+            loadImages(); // Aktualisiere Bildliste
+        } else {
+            alert('Fehler beim Löschen: ' + (result.error || 'Unbekannter Fehler'));
+        }
+    } catch (error) {
+        console.error('Fehler beim Löschen:', error);
+        alert('Fehler beim Löschen des Bildes');
     }
 }
 
