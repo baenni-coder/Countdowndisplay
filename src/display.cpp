@@ -278,9 +278,20 @@ bool DisplayManager::drawBMPImage(const String& filename, int16_t x, int16_t y, 
     uint16_t bitsPerPixel = *(uint16_t*)(dibHeader + 14);
     uint32_t imageOffset = *(uint32_t*)(bmpHeader + 10);
 
+    Serial.print("BMP Info: ");
+    Serial.print(width);
+    Serial.print("x");
+    Serial.print(abs(height));
+    Serial.print(" Pixel, ");
+    Serial.print(bitsPerPixel);
+    Serial.println(" Bits pro Pixel");
+
     // Prüfe, ob Bild monochrom ist (1 Bit pro Pixel)
     if (bitsPerPixel != 1) {
-        Serial.println("Nur monochrome (1-bit) BMP-Bilder werden unterstützt");
+        Serial.print("FEHLER: Bild hat ");
+        Serial.print(bitsPerPixel);
+        Serial.println(" Bits pro Pixel. Nur 1-bit (monochrom) wird unterstützt!");
+        Serial.println("Bitte konvertiere das Bild zu 1-bit monochrom BMP");
         file.close();
         return false;
     }
