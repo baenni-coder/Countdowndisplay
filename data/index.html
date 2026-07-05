@@ -123,6 +123,21 @@
 
                 <div class="form-group">
                     <label class="checkbox-label">
+                        <input type="checkbox" id="countdown-recurring" onchange="toggleRecurringInterval()">
+                        Wiederkehrendes Ereignis (z.B. Geburtstag)
+                    </label>
+                </div>
+
+                <div class="form-group" id="recurring-interval-group" style="display: none;">
+                    <label for="countdown-interval">Wiederhol-Intervall:</label>
+                    <select id="countdown-interval">
+                        <option value="yearly">Jährlich</option>
+                    </select>
+                    <small>Am Ereignistag bleibt das aktuelle Datum, ab dem nächsten Tag wird automatisch gewechselt</small>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
                         <input type="checkbox" id="countdown-active" checked>
                         Aktiv
                     </label>

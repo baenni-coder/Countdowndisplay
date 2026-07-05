@@ -191,6 +191,40 @@ void loop() {
                         Serial.print("   Aktualisiere Countdown: ");
                         Serial.println(currentCountdown->name);
 
+                        // Prüfe auf wiederkehrende Events (NACH dem Ereignistag)
+                        if (daysRemaining < 0 && currentCountdown->recurring && currentCountdown->recurringInterval == "yearly") {
+                            Serial.println("🔄 Wiederkehrendes Ereignis erkannt - wechsle zu nächstem Jahr!");
+
+                            // Parse aktuelles Datum (Format: YYYY-MM-DD)
+                            int year, month, day;
+                            if (sscanf(currentCountdown->targetDate.c_str(), "%d-%d-%d", &year, &month, &day) == 3) {
+                                // Erhöhe Jahr um 1
+                                year++;
+
+                                // Erstelle neues Datum
+                                char newDate[11];
+                                snprintf(newDate, sizeof(newDate), "%04d-%02d-%02d", year, month, day);
+
+                                Serial.print("   Altes Datum: ");
+                                Serial.println(currentCountdown->targetDate);
+                                Serial.print("   Neues Datum: ");
+                                Serial.println(newDate);
+
+                                // Aktualisiere Datum
+                                currentCountdown->targetDate = String(newDate);
+
+                                // Speichere Änderung
+                                if (storage.updateCountdown(currentCountdown->uid, *currentCountdown)) {
+                                    Serial.println("   ✓ Countdown erfolgreich aktualisiert");
+
+                                    // Berechne neue Tage
+                                    daysRemaining = displayManager.calculateDaysRemaining(currentCountdown->targetDate);
+                                } else {
+                                    Serial.println("   ✗ Fehler beim Speichern des aktualisierten Countdowns");
+                                }
+                            }
+                        }
+
                         displayManager.showCountdown(*currentCountdown, daysRemaining);
                     }
                 }

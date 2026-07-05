@@ -95,6 +95,13 @@ function formatDate(dateString) {
     });
 }
 
+// Toggle recurring interval visibility
+function toggleRecurringInterval() {
+    const recurring = document.getElementById('countdown-recurring').checked;
+    const intervalGroup = document.getElementById('recurring-interval-group');
+    intervalGroup.style.display = recurring ? 'block' : 'none';
+}
+
 // Show add modal
 function showAddModal() {
     document.getElementById('modal-title').textContent = 'Countdown hinzufügen';
@@ -103,6 +110,9 @@ function showAddModal() {
     document.getElementById('card-uid').value = '';
     document.getElementById('countdown-image').value = '';
     document.getElementById('countdown-active').checked = true;
+    document.getElementById('countdown-recurring').checked = false;
+    document.getElementById('countdown-interval').value = 'yearly';
+    toggleRecurringInterval(); // Hide interval dropdown
     document.getElementById('modal').classList.add('show');
 }
 
@@ -119,6 +129,9 @@ function editCountdown(uid) {
     document.getElementById('countdown-date').value = countdown.targetDate;
     document.getElementById('countdown-image').value = countdown.imagePath || '';
     document.getElementById('countdown-active').checked = countdown.active;
+    document.getElementById('countdown-recurring').checked = countdown.recurring || false;
+    document.getElementById('countdown-interval').value = countdown.recurringInterval || 'yearly';
+    toggleRecurringInterval(); // Show/hide interval dropdown
     document.getElementById('modal').classList.add('show');
 }
 
@@ -167,7 +180,11 @@ async function saveCountdown(event) {
         name: document.getElementById('countdown-name').value,
         targetDate: document.getElementById('countdown-date').value,
         imagePath: document.getElementById('countdown-image').value,
-        active: document.getElementById('countdown-active').checked
+        active: document.getElementById('countdown-active').checked,
+        recurring: document.getElementById('countdown-recurring').checked,
+        recurringInterval: document.getElementById('countdown-recurring').checked
+            ? document.getElementById('countdown-interval').value
+            : ''
     };
 
     try {

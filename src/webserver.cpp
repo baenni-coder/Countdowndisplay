@@ -63,11 +63,15 @@ public:
         cd.targetDate = doc["targetDate"].as<String>();
         cd.imagePath = doc["imagePath"] | "";
         cd.active = doc["active"].as<bool>();
+        cd.recurring = doc["recurring"] | false;
+        cd.recurringInterval = doc["recurringInterval"] | "";
 
         Serial.print("Update Countdown: ");
         Serial.print(cd.name);
         Serial.print(", ImagePath: ");
-        Serial.println(cd.imagePath);
+        Serial.print(cd.imagePath);
+        Serial.print(", Recurring: ");
+        Serial.println(cd.recurring ? cd.recurringInterval : "Nein");
 
         bool result = storage.updateCountdown(uid, cd);
         Serial.print("Update Result: ");
@@ -190,6 +194,8 @@ void WebServerManager::setupRoutes() {
             cd.targetDate = doc["targetDate"].as<String>();
             cd.imagePath = doc["imagePath"] | "";
             cd.active = doc["active"].as<bool>();
+            cd.recurring = doc["recurring"] | false;
+            cd.recurringInterval = doc["recurringInterval"] | "";
 
             if (storage.addCountdown(cd)) {
                 request->send(200, "application/json", "{\"success\":true}");
@@ -414,6 +420,8 @@ void WebServerManager::handleGetCountdowns(AsyncWebServerRequest* request) {
         obj["targetDate"] = cd.targetDate;
         obj["imagePath"] = cd.imagePath;
         obj["active"] = cd.active;
+        obj["recurring"] = cd.recurring;
+        obj["recurringInterval"] = cd.recurringInterval;
     }
 
     String output;

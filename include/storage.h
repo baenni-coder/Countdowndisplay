@@ -11,6 +11,8 @@ struct Countdown {
     String targetDate;    // Datum im Format "YYYY-MM-DD"
     String imagePath;     // Pfad zum Bild (optional, z.B. "/images/birthday.bmp")
     bool active;          // Ist dieser Countdown aktiv?
+    bool recurring;       // Wiederkehrendes Ereignis (z.B. Geburtstag)
+    String recurringInterval; // Intervall: "yearly", "monthly", "weekly"
 };
 
 class StorageManager {

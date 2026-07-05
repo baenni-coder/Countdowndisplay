@@ -357,17 +357,6 @@ REST API für erweiterte Integration:
 - Zeitzone in `src/main.cpp` anpassen bei Bedarf
 - NTP-Server können bis zu 30 Sekunden für Synchronisation benötigen
 
-## 👨‍💻 Für Entwickler & AI-Assistenten
-
-Wenn du mit diesem Projekt entwickeln möchtest oder ein AI-Assistent bist, der beim Entwickeln hilft, lies bitte die **[CLAUDE.md](CLAUDE.md)** Datei. Sie enthält:
-
-- Detaillierte Architektur-Dokumentation
-- Codebase-Struktur und Komponenten
-- Entwicklungsrichtlinien und Best Practices
-- API-Dokumentation
-- Hardware-Konfiguration Details
-- Build & Deploy Anleitung
-
 ## 📝 Lizenz
 
 MIT License - siehe LICENSE Datei für Details

@@ -137,6 +137,8 @@ String StorageManager::serializeToJson() {
         cdObj["targetDate"] = cd.targetDate;
         cdObj["imagePath"] = cd.imagePath;
         cdObj["active"] = cd.active;
+        cdObj["recurring"] = cd.recurring;
+        cdObj["recurringInterval"] = cd.recurringInterval;
     }
 
     String output;
@@ -168,6 +170,8 @@ bool StorageManager::deserializeFromJson(const String& json) {
         cd.targetDate = cdObj["targetDate"].as<String>();
         cd.imagePath = cdObj["imagePath"] | "";  // Optional, Standard: leer
         cd.active = cdObj["active"].as<bool>();
+        cd.recurring = cdObj["recurring"] | false;  // Optional, Standard: false
+        cd.recurringInterval = cdObj["recurringInterval"] | "";  // Optional, Standard: leer
         countdowns.push_back(cd);
     }
 
