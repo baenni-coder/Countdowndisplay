@@ -207,7 +207,7 @@ int DisplayManager::calculateDaysRemaining(const String& targetDate) {
 
     // Berechne Differenz in Tagen
     double diffSeconds = difftime(targetTime, currentTime);
-    int days = (int)(diffSeconds / 86400.0); // 86400 Sekunden pro Tag
+    int days = (int)floor(diffSeconds / 86400.0); // floor() für korrekte Rundung bei negativen Zahlen
 
     return days;
 }
