@@ -174,7 +174,16 @@ void loop() {
                 Serial.println(currentCountdown->name);
 
                 // SOFORT Display aktualisieren bei neuer Karte
+                Serial.print("DEBUG: Gespeichertes Datum: ");
+                Serial.println(currentCountdown->targetDate);
+                Serial.print("DEBUG: Recurring: ");
+                Serial.print(currentCountdown->recurring ? "JA" : "NEIN");
+                Serial.print(", Interval: ");
+                Serial.println(currentCountdown->recurringInterval);
+
                 int daysRemaining = displayManager.calculateDaysRemaining(currentCountdown->targetDate);
+                Serial.print("DEBUG: Berechnete Tage: ");
+                Serial.println(daysRemaining);
 
                 // Prüfe ob wiederkehrendes Event aktualisiert werden muss (BEVOR Display angezeigt wird)
                 daysRemaining = checkAndUpdateRecurringEvent(currentCountdown, daysRemaining);
