@@ -21,6 +21,51 @@ bool displayNeedsUpdate = true;
 const unsigned long CARD_CHECK_INTERVAL = 1000;    // Prüfe alle 1 Sekunde auf Karte
 const unsigned long MIDNIGHT_CHECK_INTERVAL = 60000; // Prüfe alle 60 Sekunden auf Mitternacht
 
+// Hilfsfunktion: Prüfe und aktualisiere wiederkehrende Events
+// Gibt die neuen daysRemaining zurück (oder die alten wenn kein Update nötig war)
+int checkAndUpdateRecurringEvent(Countdown* countdown, int daysRemaining) {
+    if (countdown == nullptr) return daysRemaining;
+
+    // Prüfe ob Event vorbei ist UND wiederkehrend ist
+    if (daysRemaining < 0 && countdown->recurring && countdown->recurringInterval == "yearly") {
+        Serial.println("🔄 Wiederkehrendes Ereignis erkannt - wechsle zu nächstem Jahr!");
+
+        // Parse aktuelles Datum (Format: YYYY-MM-DD)
+        int year, month, day;
+        if (sscanf(countdown->targetDate.c_str(), "%d-%d-%d", &year, &month, &day) == 3) {
+            // Erhöhe Jahr um 1
+            year++;
+
+            // Erstelle neues Datum
+            char newDate[11];
+            snprintf(newDate, sizeof(newDate), "%04d-%02d-%02d", year, month, day);
+
+            Serial.print("   Altes Datum: ");
+            Serial.println(countdown->targetDate);
+            Serial.print("   Neues Datum: ");
+            Serial.println(newDate);
+
+            // Aktualisiere Datum
+            countdown->targetDate = String(newDate);
+
+            // Speichere Änderung
+            if (storage.updateCountdown(countdown->uid, *countdown)) {
+                Serial.println("   ✓ Countdown erfolgreich aktualisiert");
+
+                // Berechne neue Tage und gib sie zurück
+                int newDaysRemaining = displayManager.calculateDaysRemaining(countdown->targetDate);
+                Serial.print("   Neue Tage verbleibend: ");
+                Serial.println(newDaysRemaining);
+                return newDaysRemaining;
+            } else {
+                Serial.println("   ✗ Fehler beim Speichern des aktualisierten Countdowns");
+            }
+        }
+    }
+
+    return daysRemaining;  // Keine Änderung nötig
+}
+
 void setup() {
     Serial.begin(115200);
     delay(1000);
@@ -131,6 +176,9 @@ void loop() {
                 // SOFORT Display aktualisieren bei neuer Karte
                 int daysRemaining = displayManager.calculateDaysRemaining(currentCountdown->targetDate);
 
+                // Prüfe ob wiederkehrendes Event aktualisiert werden muss (BEVOR Display angezeigt wird)
+                daysRemaining = checkAndUpdateRecurringEvent(currentCountdown, daysRemaining);
+
                 if (daysRemaining == -9999) {
                     displayManager.showError("Ungültiges Datum");
                 } else {
@@ -191,39 +239,8 @@ void loop() {
                         Serial.print("   Aktualisiere Countdown: ");
                         Serial.println(currentCountdown->name);
 
-                        // Prüfe auf wiederkehrende Events (NACH dem Ereignistag)
-                        if (daysRemaining < 0 && currentCountdown->recurring && currentCountdown->recurringInterval == "yearly") {
-                            Serial.println("🔄 Wiederkehrendes Ereignis erkannt - wechsle zu nächstem Jahr!");
-
-                            // Parse aktuelles Datum (Format: YYYY-MM-DD)
-                            int year, month, day;
-                            if (sscanf(currentCountdown->targetDate.c_str(), "%d-%d-%d", &year, &month, &day) == 3) {
-                                // Erhöhe Jahr um 1
-                                year++;
-
-                                // Erstelle neues Datum
-                                char newDate[11];
-                                snprintf(newDate, sizeof(newDate), "%04d-%02d-%02d", year, month, day);
-
-                                Serial.print("   Altes Datum: ");
-                                Serial.println(currentCountdown->targetDate);
-                                Serial.print("   Neues Datum: ");
-                                Serial.println(newDate);
-
-                                // Aktualisiere Datum
-                                currentCountdown->targetDate = String(newDate);
-
-                                // Speichere Änderung
-                                if (storage.updateCountdown(currentCountdown->uid, *currentCountdown)) {
-                                    Serial.println("   ✓ Countdown erfolgreich aktualisiert");
-
-                                    // Berechne neue Tage
-                                    daysRemaining = displayManager.calculateDaysRemaining(currentCountdown->targetDate);
-                                } else {
-                                    Serial.println("   ✗ Fehler beim Speichern des aktualisierten Countdowns");
-                                }
-                            }
-                        }
+                        // Prüfe ob wiederkehrendes Event aktualisiert werden muss
+                        daysRemaining = checkAndUpdateRecurringEvent(currentCountdown, daysRemaining);
 
                         displayManager.showCountdown(*currentCountdown, daysRemaining);
                     }
